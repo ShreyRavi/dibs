@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Dibs design tokens — source of truth at runtime.
+ * Mirrors design_handoff_dibs/README.md "Design Tokens" table. The Tailwind
+ * config references these variables; do not diverge the two.
+ */
+:root {
+  --bg: #0d0d0f;
+  --bg-imessage: #000000;
+  --surface: #16151b;
+  --surface-2: #1b1a20;
+  --bubble-in: #26252b;
+  --text: #f5f3ef;
+  --text-60: rgba(245, 243, 239, 0.6);
+  --text-50: rgba(245, 243, 239, 0.5);
+  --text-40: rgba(245, 243, 239, 0.4);
+  --hairline: rgba(255, 255, 255, 0.06);
+  --hairline-strong: rgba(255, 255, 255, 0.1);
+  --lime: #c8ff4d;
+  --lime-deep: #9bd62e;
+  --pink: #ff5da2;
+  --periwinkle: #8b9cff;
+  --peach: #ffb27a;
+  --mint: #6fe3c2;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-hanken), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Mobile-first content column: real product is a 390px screen. */
+.screen {
+  width: 100%;
+  max-width: 440px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Accessibility: honor reduced-motion — confetti/pop become calm (handoff a11y spec). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Visible focus ring — keyboard a11y (handoff a11y spec: 2px lime offset). */
+:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

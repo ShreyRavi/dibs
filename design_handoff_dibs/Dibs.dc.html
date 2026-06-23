@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; }
+  * { -webkit-tap-highlight-color: transparent; }
+  @keyframes dibsFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes dibsPop { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes dibsToast { from { opacity: 0; transform: translate(-50%, 14px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  @keyframes dibsCard { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: none; } }
+  @keyframes dibsConfetti { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(440px) rotate(680deg); opacity: 0; } }
+  @keyframes dibsBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  input::placeholder { color: rgba(245,243,239,0.32); }
+</style>
+</helmet>
+
+<div style="min-height:100vh; box-sizing:border-box; background:#ECEAE3; display:flex; flex-direction:column; align-items:center; padding:40px 24px 64px; font-family:'Hanken Grotesk', system-ui, sans-serif;">
+
+  <!-- marketing header -->
+  <div style="display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:28px; text-align:center;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div style="width:30px; height:30px; border-radius:9px; background:#0d0d0f; display:flex; align-items:center; justify-content:center;">
+        <div style="width:13px; height:13px; border-radius:4px; background:#c8ff4d;"></div>
+      </div>
+      <div style="display:flex; align-items:baseline; gap:8px;">
+        <span style="font-family:'Gabarito', sans-serif; font-weight:700; font-size:26px; letter-spacing:-0.5px; background:linear-gradient(95deg,#ff5da2,#ffb27a 48%,#9bd62e); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;">Dibs</span>
+        <span style="font-family:'Gabarito', sans-serif; font-weight:600; font-size:14px; color:#9a968d;">by Kansoboard</span>
+      </div>
+    </div>
+    <div style="font-size:15px; color:#6b6862; max-width:432px; line-height:1.45;">Text a group, get a shared to-do list. Everyone calls dibs on tasks &amp; watches it fill up &mdash; no app, no logins, no nagging. &#10024;</div>
+  </div>
+
+  <!-- phone -->
+  <div>
+    <div style="position:relative; width:390px; height:820px; border-radius:48px; background:#000; box-shadow:0 40px 90px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.1); overflow:hidden; display:flex; flex-direction:column; font-family:-apple-system, system-ui, sans-serif;">
+
+      <!-- scroll area -->
+      <div style="flex:1; min-height:0; overflow:auto; border-radius:48px;">
+
+      <!-- ════════════ SCREEN 1 · CREATE ════════════ -->
+      <sc-if value="{{ isCreate }}" hint-placeholder-val="{{ true }}">
+        <div style="position:relative; overflow:hidden; min-height:100%; box-sizing:border-box; background:#0d0d0f; color:#f5f3ef; display:flex; flex-direction:column; padding:64px 22px 30px;">
+
+          <div style="position:absolute; top:-40px; left:-40px; width:280px; height:210px; background:radial-gradient(circle at 30% 25%, rgba(255,93,162,0.2), transparent 62%); pointer-events:none;"></div>
+          <div style="position:absolute; top:-50px; right:-50px; width:240px; height:200px; background:radial-gradient(circle at 70% 20%, rgba(200,255,77,0.14), transparent 62%); pointer-events:none;"></div>
+
+          <div style="position:relative; display:flex; align-items:center; gap:10px; margin-bottom:24px;">
+            <div style="width:28px; height:28px; border-radius:8px; background:#1b1a20; display:flex; align-items:center; justify-content:center; transform:rotate(-8deg); box-shadow:0 0 14px rgba(200,255,77,0.35);">
+              <div style="width:12px; height:12px; border-radius:3px; background:#c8ff4d;"></div>
+            </div>
+            <span style="font-family:'Gabarito',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.2px; color:rgba(245,243,239,0.6);">New event &#10024;</span>
+          </div>
+
+          <input value="{{ listTitle }}" onInput="{{ onTitleChange }}" style="background:transparent; border:none; outline:none; color:#f5f3ef; font-family:'Gabarito',sans-serif; font-weight:700; font-size:32px; letter-spacing:-1px; line-height:1.1; padding:0; margin:0; caret-color:#c8ff4d; width:100%;" />
+          <div style="font-size:14px; color:rgba(245,243,239,0.5); margin-top:8px;">{{ date }}</div>
+
+          <div style="font-family:'Gabarito',sans-serif; font-size:12px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:rgba(245,243,239,0.4); margin:30px 0 12px;">Tasks</div>
+
+          <div style="display:flex; flex-direction:column; gap:9px;">
+            <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="5">
+              <div style="display:flex; align-items:center; gap:12px; background:#16151b; border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:13px 14px;">
+                <div style="width:18px; height:18px; border-radius:50%; border:2px dashed rgba(245,243,239,0.22); flex-shrink:0;"></div>
+                <span style="font-size:16px; font-weight:500;">{{ t.emoji }}&nbsp;&nbsp;{{ t.title }}</span>
+              </div>
+            </sc-for>
+
+            <div style="display:flex; align-items:center; gap:12px; background:transparent; border:1px dashed rgba(255,255,255,0.12); border-radius:14px; padding:13px 14px;">
+              <span style="font-size:18px; color:rgba(245,243,239,0.4); flex-shrink:0; width:18px; text-align:center;">+</span>
+              <input value="{{ draft }}" onInput="{{ onDraftChange }}" onKeyDown="{{ onDraftKey }}" placeholder="Add a task&hellip;" style="background:transparent; border:none; outline:none; color:#f5f3ef; font-family:'Hanken Grotesk',sans-serif; font-size:16px; width:100%; caret-color:#c8ff4d;" />
+            </div>
+          </div>
+
+          <div style="flex:1; min-height:18px;"></div>
+
+          <button onClick="{{ goThread }}" style="position:relative; width:100%; border:none; cursor:pointer; background:#c8ff4d; color:#0d0d0f; font-family:'Gabarito',sans-serif; font-weight:700; font-size:18px; border-radius:16px; padding:17px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 10px 32px rgba(200,255,77,0.42);">
+            Share with the group
+            <span style="font-size:19px;">&rarr;</span>
+          </button>
+          <div style="text-align:center; font-size:13px; color:rgba(245,243,239,0.4); margin-top:12px;">Drop it in any group chat &mdash; they don&rsquo;t even need the app &#10024;</div>
+        </div>
+      </sc-if>
+
+      <!-- ════════════ SCREEN 2 · iMESSAGE THREAD ════════════ -->
+      <sc-if value="{{ isThread }}" hint-placeholder-val="{{ true }}">
+        <div style="min-height:100%; box-sizing:border-box; background:#000; color:#fff; display:flex; flex-direction:column;">
+
+          <!-- chat header -->
+          <div style="padding:54px 16px 12px; display:flex; flex-direction:column; align-items:center; gap:7px; border-bottom:0.5px solid rgba(255,255,255,0.12); background:rgba(20,20,22,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);">
+            <div style="display:flex;">
+              <div style="width:34px; height:34px; border-radius:50%; background:#ff5da2; display:flex; align-items:center; justify-content:center; font-family:'Gabarito',sans-serif; font-weight:600; font-size:14px; color:#0d0d0f; border:2px solid #000;">M</div>
+              <div style="width:34px; height:34px; border-radius:50%; background:#8b9cff; display:flex; align-items:center; justify-content:center; font-family:'Gabarito',sans-serif; font-weight:600; font-size:14px; color:#0d0d0f; border:2px solid #000; margin-left:-12px;">J</div>
+              <div style="width:34px; height:34px; border-radius:50%; background:#ffb27a; display:flex; align-items:center; justify-content:center; font-family:'Gabarito',sans-serif; font-weight:600; font-size:14px; color:#0d0d0f; border:2px solid #000; margin-left:-12px;">P</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:5px; font-size:13px; font-weight:600;">Dev&rsquo;s Bday &#129323; <span style="color:rgba(255,255,255,0.4); font-size:12px;">&#8250;</span></div>
+          </div>
+
+          <!-- messages -->
+          <div style="flex:1; overflow:auto; padding:16px 14px 8px; display:flex; flex-direction:column; gap:3px; font-family:-apple-system, system-ui, sans-serif;">
+
+            <div style="display:flex; flex-direction:column; align-items:flex-start; margin-top:2px;">
+              <div style="font-size:11px; color:rgba(235,235,245,0.5); margin:0 0 3px 13px;">Maya</div>
+              <div style="max-width:76%; background:#26252b; color:#fff; border-radius:19px; padding:8px 14px; font-size:16px; line-height:1.3;">ok who&rsquo;s actually doing what for dev&rsquo;s bday &#128557;</div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; align-items:flex-end; margin-top:8px;">
+              <div style="max-width:76%; background:#0a84ff; color:#fff; border-radius:19px; padding:8px 14px; font-size:16px; line-height:1.3;">made us a list, claim your tasks &#128071;</div>
+            </div>
+
+            <!-- THE DIBS CARD -->
+            <div style="align-self:flex-end; max-width:84%; margin-top:8px;">
+              <div style="background:#0d0d0f; border:1px solid rgba(200,255,77,0.22); border-radius:22px; overflow:hidden; box-shadow:0 0 30px rgba(200,255,77,0.1), 0 8px 30px rgba(0,0,0,0.5);">
+                <div style="padding:15px 16px 16px; font-family:'Hanken Grotesk',sans-serif;">
+                  <div style="display:flex; align-items:center; gap:7px; margin-bottom:11px;">
+                    <div style="width:18px; height:18px; border-radius:6px; background:#1b1a20; display:flex; align-items:center; justify-content:center;"><div style="width:8px; height:8px; border-radius:2.5px; background:#c8ff4d;"></div></div>
+                    <span style="font-family:'Gabarito',sans-serif; font-weight:600; font-size:12px; letter-spacing:0.3px; color:rgba(245,243,239,0.55);">DIBS &middot; shared list</span>
+                  </div>
+                  <div style="font-family:'Gabarito',sans-serif; font-weight:700; font-size:21px; letter-spacing:-0.5px; color:#f5f3ef;">{{ listTitle }}</div>
+                  <div style="font-size:13px; color:rgba(245,243,239,0.5); margin-top:3px;">{{ date }}</div>
+
+                  <div style="display:flex; align-items:center; gap:10px; margin-top:14px;">
+                    <div style="flex:1; height:8px; border-radius:99px; background:rgba(255,255,255,0.09); overflow:hidden;">
+                      <div style="height:100%; width:{{ pctText }}; background:#c8ff4d; border-radius:99px;"></div>
+                    </div>
+                    <span style="font-family:'Gabarito',sans-serif; font-weight:600; font-size:13px; color:#f5f3ef;">{{ doneCount }}/{{ total }}</span>
+                  </div>
+                  <div style="font-size:13px; font-weight:600; color:#ff5da2; margin-top:10px;">&#9889; {{ needOwner }} tasks still need an owner</div>
+
+                  <div style="display:flex; align-items:center; margin-top:14px;">
+                    <sc-for list="{{ crew }}" as="m" hint-placeholder-count="5">
+                      <div style="{{ m.cardAvatarStyle }}">{{ m.initials }}</div>
+                    </sc-for>
+                    <span style="font-size:12px; color:rgba(245,243,239,0.45); margin-left:10px;">5 people</span>
+                  </div>
+
+                  <button onClick="{{ goList }}" style="width:100%; border:none; cursor:pointer; background:#c8ff4d; color:#0d0d0f; font-family:'Gabarito',sans-serif; font-weight:700; font-size:16px; border-radius:13px; padding:13px; margin-top:15px; display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:0 6px 22px rgba(200,255,77,0.38);">Open the list <span>&rarr;</span></button>
+                </div>
+              </div>
+              <div style="text-align:right; font-size:11px; color:rgba(235,235,245,0.4); margin:4px 6px 0;">Tap to open &middot; works in any chat</div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; align-items:flex-start; margin-top:10px;">
+              <div style="font-size:11px; color:rgba(235,235,245,0.5); margin:0 0 3px 13px;">Jordan</div>
+              <div style="max-width:76%; background:#26252b; color:#fff; border-radius:19px; padding:8px 14px; font-size:16px; line-height:1.3;">calling dibs on the cake &#127856;</div>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-start; margin-top:5px;">
+              <div style="font-size:11px; color:rgba(235,235,245,0.5); margin:0 0 3px 13px;">Priya</div>
+              <div style="max-width:76%; background:#26252b; color:#fff; border-radius:19px; padding:8px 14px; font-size:16px; line-height:1.3;">i got invites &#128156;</div>
+            </div>
+          </div>
+
+          <!-- imessage input bar -->
+          <div style="padding:8px 12px 30px; display:flex; align-items:center; gap:10px; border-top:0.5px solid rgba(255,255,255,0.1);">
+            <div style="width:32px; height:32px; border-radius:50%; background:#1c1c1e; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.6); font-size:20px;">+</div>
+            <div style="flex:1; height:34px; border-radius:99px; border:1px solid rgba(255,255,255,0.18); display:flex; align-items:center; padding:0 14px; color:rgba(235,235,245,0.4); font-size:15px; font-family:-apple-system,system-ui;">iMessage</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ════════════ SCREEN 3 · THE LIST ════════════ -->
+      <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+        <div style="position:relative; overflow:hidden; min-height:100%; box-sizing:border-box; background:#0d0d0f; color:#f5f3ef; display:flex; flex-direction:column; padding:56px 20px 30px;">
+
+          <div style="position:absolute; top:-60px; right:-40px; width:300px; height:240px; background:radial-gradient(circle at 70% 20%, rgba(200,255,77,0.16), transparent 62%); pointer-events:none;"></div>
+          <div style="position:absolute; top:-30px; left:-50px; width:240px; height:200px; background:radial-gradient(circle at 30% 20%, rgba(255,93,162,0.14), transparent 62%); pointer-events:none;"></div>
+
+          <div style="position:relative; display:flex; align-items:center; gap:7px; margin-bottom:18px;">
+            <span style="font-size:12px; color:rgba(245,243,239,0.45);">&#8592; Dev&rsquo;s Bday &#129323;</span>
+            <span style="font-size:11px; color:rgba(245,243,239,0.3);">&middot; shared list</span>
+          </div>
+
+          <!-- title + ring -->
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">
+            <div style="flex:1;">
+              <div style="font-family:'Gabarito',sans-serif; font-weight:700; font-size:28px; letter-spacing:-0.8px; line-height:1.08;">{{ listTitle }}</div>
+              <div style="font-size:13px; color:rgba(245,243,239,0.5); margin-top:6px;">{{ date }}</div>
+            </div>
+            <div style="position:relative; width:72px; height:72px; flex-shrink:0;">
+              <svg width="72" height="72" viewBox="0 0 72 72">
+                <circle cx="36" cy="36" r="30" stroke="rgba(255,255,255,0.1)" stroke-width="6" fill="none"></circle>
+                <circle cx="36" cy="36" r="30" stroke="#c8ff4d" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="{{ ringCirc }}" stroke-dashoffset="{{ ringOffset }}" transform="rotate(-90 36 36)" style="transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);"></circle>
+              </svg>
+              <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <span style="font-family:'Gabarito',sans-serif; font-weight:700; font-size:18px; line-height:1;">{{ doneCount }}<span style="color:rgba(245,243,239,0.4); font-size:13px;">/{{ total }}</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- crew -->
+          <div style="display:flex; align-items:center; margin-top:16px;">
+            <sc-for list="{{ crew }}" as="m" hint-placeholder-count="5">
+              <div style="{{ m.listAvatarStyle }}">{{ m.initials }}</div>
+            </sc-for>
+            <span style="font-size:12px; color:rgba(245,243,239,0.45); margin-left:10px;">You + 4 others</span>
+          </div>
+
+          <!-- all done banner -->
+          <sc-if value="{{ allDone }}" hint-placeholder-val="">
+            <div style="position:relative; background:rgba(200,255,77,0.12); border:1px solid rgba(200,255,77,0.4); border-radius:14px; padding:14px; margin-top:18px; text-align:center; font-size:14px; font-weight:700; color:#c8ff4d; box-shadow:0 0 28px rgba(200,255,77,0.18);">&#127881; every task done &mdash; dev&rsquo;s gonna freak</div>
+          </sc-if>
+
+          <!-- need owner banner -->
+          <sc-if value="{{ hasUnclaimed }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(255,93,162,0.1); border:1px solid rgba(255,93,162,0.3); border-radius:14px; padding:12px 14px; margin-top:18px;">
+              <span style="font-size:14px; font-weight:600; color:#ff5da2;">&#9889; {{ needOwner }} tasks need an owner</span>
+              <button onClick="{{ nudge }}" style="border:1px solid rgba(255,93,162,0.5); cursor:pointer; background:transparent; color:#ff5da2; font-family:'Hanken Grotesk',sans-serif; font-weight:700; font-size:13px; border-radius:99px; padding:6px 14px;">Nudge &#128075;</button>
+            </div>
+          </sc-if>
+
+          <!-- tasks -->
+          <div style="display:flex; flex-direction:column; gap:9px; margin-top:18px;">
+            <sc-for list="{{ taskVMs }}" as="t" hint-placeholder-count="7">
+              <div style="display:flex; align-items:center; gap:13px; background:#16151b; border:1px solid rgba(255,255,255,0.06); border-radius:15px; padding:13px 14px;">
+
+                <!-- left: checkbox or dashed -->
+                <sc-if value="{{ t.hasOwner }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ t.onToggle }}" style="{{ t.checkFullStyle }}">
+                    <sc-if value="{{ t.done }}" hint-placeholder-val="{{ true }}">
+                      <span style="color:#0d0d0f; font-size:14px; font-weight:800; line-height:1;">&#10003;</span>
+                    </sc-if>
+                  </button>
+                </sc-if>
+                <sc-if value="{{ t.unclaimed }}" hint-placeholder-val="{{ true }}">
+                  <div style="width:24px; height:24px; border-radius:50%; border:2px dashed rgba(245,243,239,0.22); flex-shrink:0;"></div>
+                </sc-if>
+
+                <!-- title -->
+                <div style="flex:1; min-width:0;">
+                  <div style="{{ t.titleStyle }}">{{ t.emoji }}&nbsp;&nbsp;{{ t.title }}</div>
+                </div>
+
+                <!-- right: owner avatar or call dibs -->
+                <sc-if value="{{ t.hasOwner }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ t.ownerWrapStyle }}">
+                    <div style="{{ t.ownerAvatarStyle }}">{{ t.ownerInitials }}</div>
+                    <span style="font-size:13px; font-weight:600; color:rgba(245,243,239,0.7);">{{ t.ownerName }}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ t.unclaimed }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ t.onDibs }}" style="flex-shrink:0; border:none; cursor:pointer; background:#ff5da2; color:#0d0d0f; font-family:'Gabarito',sans-serif; font-weight:700; font-size:13px; border-radius:99px; padding:8px 15px; box-shadow:0 4px 16px rgba(255,93,162,0.45);">Call dibs</button>
+                </sc-if>
+              </div>
+            </sc-for>
+
+            <!-- add task -->
+            <div style="display:flex; align-items:center; gap:13px; background:transparent; border:1px dashed rgba(255,255,255,0.12); border-radius:15px; padding:13px 14px;">
+              <span style="font-size:18px; color:rgba(245,243,239,0.4); flex-shrink:0; width:24px; text-align:center;">+</span>
+              <input value="{{ draft }}" onInput="{{ onDraftChange }}" onKeyDown="{{ onDraftKey }}" placeholder="Add a task for the group&hellip;" style="background:transparent; border:none; outline:none; color:#f5f3ef; font-family:'Hanken Grotesk',sans-serif; font-size:16px; width:100%; caret-color:#c8ff4d;" />
+            </div>
+          </div>
+
+          <div style="flex:1; min-height:20px;"></div>
+
+          <sc-if value="{{ allDone }}" hint-placeholder-val="">
+            <button onClick="{{ goComplete }}" style="position:relative; width:100%; border:none; cursor:pointer; background:#c8ff4d; color:#0d0d0f; font-family:'Gabarito',sans-serif; font-weight:700; font-size:17px; border-radius:15px; padding:16px; margin-top:8px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 10px 32px rgba(200,255,77,0.42);">Complete the event &#127881;</button>
+          </sc-if>
+          <sc-if value="{{ notAllDone }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ goComplete }}" style="width:100%; border:1px solid rgba(245,243,239,0.18); cursor:pointer; background:transparent; color:rgba(245,243,239,0.7); font-family:'Gabarito',sans-serif; font-weight:600; font-size:15px; border-radius:15px; padding:14px; margin-top:8px; display:flex; align-items:center; justify-content:center; gap:7px;">Wrap up the event <span>&rarr;</span></button>
+          </sc-if>
+
+          <div style="text-align:center; font-size:12px; color:rgba(245,243,239,0.35); margin-top:14px;">Synced with everyone in Dev&rsquo;s Bday &#129323;</div>
+
+          <!-- confetti -->
+          <sc-if value="{{ hasConfetti }}" hint-placeholder-val="">
+            <div style="position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:95;">
+              <sc-for list="{{ confetti }}" as="c" hint-placeholder-count="0">
+                <div style="{{ c.style }}"></div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- toast -->
+          <sc-if value="{{ toast }}" hint-placeholder-val="">
+            <div style="position:absolute; bottom:54px; left:50%; transform:translateX(-50%); background:#f5f3ef; color:#0d0d0f; font-family:'Gabarito',sans-serif; font-weight:600; font-size:14px; padding:11px 18px; border-radius:99px; box-shadow:0 8px 24px rgba(0,0,0,0.4); white-space:nowrap; animation: dibsToast .3s ease both; z-index:80;">{{ toast }}</div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ════════════ SCREEN 4 · COMPLETE ════════════ -->
+      <sc-if value="{{ isComplete }}" hint-placeholder-val="">
+        <div style="position:relative; overflow:hidden; min-height:100%; box-sizing:border-box; background:#0d0d0f; color:#f5f3ef; display:flex; flex-direction:column; align-items:center; text-align:center; padding:74px 26px 40px;">
+
+          <div style="position:absolute; top:-40px; left:50%; transform:translateX(-50%); width:360px; height:300px; background:radial-gradient(circle at 50% 0%, rgba(200,255,77,0.2), transparent 60%); pointer-events:none;"></div>
+          <div style="position:absolute; bottom:-40px; right:-50px; width:260px; height:220px; background:radial-gradient(circle at 70% 80%, rgba(255,93,162,0.16), transparent 62%); pointer-events:none;"></div>
+
+          <sc-if value="{{ hasConfetti }}" hint-placeholder-val="">
+            <div style="position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:95;">
+              <sc-for list="{{ confetti }}" as="c" hint-placeholder-count="0">
+                <div style="{{ c.style }}"></div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- commemorative seal -->
+          <div style="position:relative; z-index:2; width:150px; height:150px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; transform:rotate(-8deg); background:radial-gradient(circle at 50% 32%, #1d2611, #14130f); border:2px dashed rgba(200,255,77,0.55); box-shadow:0 0 42px rgba(200,255,77,0.28); margin-bottom:28px;">
+            <div style="font-size:38px; line-height:1;">&#127881;</div>
+            <div style="font-family:'Gabarito',sans-serif; font-weight:800; font-size:15px; letter-spacing:2.5px; color:#c8ff4d; margin-top:8px;">EVENT</div>
+            <div style="font-family:'Gabarito',sans-serif; font-weight:800; font-size:15px; letter-spacing:2.5px; color:#c8ff4d;">COMPLETE</div>
+          </div>
+
+          <div style="position:relative; z-index:2; font-family:'Gabarito',sans-serif; font-weight:800; font-size:30px; letter-spacing:-0.8px; line-height:1.1;">Dev&rsquo;s 25th &#127874;</div>
+          <div style="position:relative; z-index:2; font-size:14px; color:rgba(245,243,239,0.5); margin-top:7px;">{{ date }} &middot; pulled off &#9889;</div>
+
+          <!-- stat chips -->
+          <div style="position:relative; z-index:2; display:flex; gap:9px; margin-top:24px;">
+            <div style="background:#16151b; border:1px solid rgba(255,255,255,0.07); border-radius:13px; padding:11px 16px; transform:rotate(-3deg);">
+              <div style="font-family:'Gabarito',sans-serif; font-weight:800; font-size:22px; color:#c8ff4d;">{{ total }}</div>
+              <div style="font-size:11px; color:rgba(245,243,239,0.5); margin-top:1px;">tasks done</div>
+            </div>
+            <div style="background:#16151b; border:1px solid rgba(255,255,255,0.07); border-radius:13px; padding:11px 16px; transform:rotate(2deg);">
+              <div style="font-family:'Gabarito',sans-serif; font-weight:800; font-size:22px; color:#ff5da2;">{{ peopleCount }}</div>
+              <div style="font-size:11px; color:rgba(245,243,239,0.5); margin-top:1px;">people</div>
+            </div>
+            <div style="background:#16151b; border:1px solid rgba(255,255,255,0.07); border-radius:13px; padding:11px 16px; transform:rotate(-2deg);">
+              <div style="font-family:'Gabarito',sans-serif; font-weight:800; font-size:22px; color:#8b9cff;">0</div>
+              <div style="font-size:11px; color:rgba(245,243,239,0.5); margin-top:1px;">dropped balls</div>
+            </div>
+          </div>
+
+          <!-- crew -->
+          <div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:11px; margin-top:28px;">
+            <div style="font-size:13px; color:rgba(245,243,239,0.55);">Pulled off by the crew</div>
+            <div style="display:flex; align-items:center;">
+              <sc-for list="{{ crew }}" as="m" hint-placeholder-count="5">
+                <div style="{{ m.listAvatarStyle }}">{{ m.initials }}</div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="flex:1; min-height:24px;"></div>
+
+          <button onClick="{{ restart }}" style="position:relative; z-index:2; width:100%; border:none; cursor:pointer; background:#c8ff4d; color:#0d0d0f; font-family:'Gabarito',sans-serif; font-weight:700; font-size:17px; border-radius:15px; padding:16px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 10px 32px rgba(200,255,77,0.4);">Plan the next one &#127881;</button>
+          <button onClick="{{ goList }}" style="position:relative; z-index:2; width:100%; border:1px solid rgba(245,243,239,0.18); cursor:pointer; background:transparent; color:rgba(245,243,239,0.7); font-family:'Gabarito',sans-serif; font-weight:600; font-size:14px; border-radius:14px; padding:12px; margin-top:9px;">Back to the list</button>
+        </div>
+      </sc-if>
+
+      </div>
+
+      <!-- status bar -->
+      <div style="position:absolute; top:0; left:0; right:0; height:54px; display:flex; align-items:center; justify-content:space-between; padding:16px 30px 0; z-index:40; pointer-events:none;">
+        <span style="font-family:-apple-system, system-ui; font-weight:600; font-size:16px; color:#fff; letter-spacing:0.3px;">9:41</span>
+        <div style="display:flex; align-items:center; gap:7px;">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="7" width="3" height="5" rx="0.7" fill="#fff"></rect><rect x="5" y="4.5" width="3" height="7.5" rx="0.7" fill="#fff"></rect><rect x="10" y="2" width="3" height="10" rx="0.7" fill="#fff"></rect><rect x="15" y="0" width="3" height="12" rx="0.7" fill="#fff"></rect></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 3C10.7 3 12.7 3.9 14.2 5.3L15.3 4.2C13.5 2.5 11.1 1.4 8.5 1.4S3.5 2.5 1.7 4.2L2.8 5.3C4.3 3.9 6.3 3 8.5 3Z" fill="#fff"></path><circle cx="8.5" cy="10" r="1.5" fill="#fff"></circle></svg>
+          <svg width="26" height="13" viewBox="0 0 26 13"><rect x="0.5" y="0.5" width="22" height="12" rx="3.5" stroke="#fff" stroke-opacity="0.4" fill="none"></rect><rect x="2" y="2" width="19" height="9" rx="2" fill="#fff"></rect><path d="M24 4.5v4c0.8-0.3 1.3-1 1.3-2s-0.5-1.7-1.3-2Z" fill="#fff" fill-opacity="0.5"></path></svg>
+        </div>
+      </div>
+
+      <!-- dynamic island -->
+      <div style="position:absolute; top:11px; left:50%; transform:translateX(-50%); width:120px; height:35px; border-radius:20px; background:#000; z-index:50;"></div>
+
+      <!-- home indicator -->
+      <div style="position:absolute; bottom:9px; left:50%; transform:translateX(-50%); width:134px; height:5px; border-radius:99px; background:rgba(255,255,255,0.45); z-index:60; pointer-events:none;"></div>
+
+    </div>
+  </div>
+
+  <!-- step controls -->
+  <div style="display:flex; align-items:center; gap:8px; margin-top:26px; flex-wrap:wrap; justify-content:center;">
+    <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+      <button onClick="{{ s.onClick }}" style="{{ s.style }}">{{ s.label }}</button>
+    </sc-for>
+    <button onClick="{{ restart }}" style="border:1px solid rgba(13,13,15,0.15); cursor:pointer; background:transparent; color:#6b6862; font-family:'Gabarito',sans-serif; font-weight:600; font-size:13px; border-radius:99px; padding:9px 16px;">&#8635; Restart</button>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:620,&quot;height&quot;:1000}}">
+class Component extends DCLogic {
+  M = {
+    you:    { name: 'You',    initials: 'Y', color: '#c8ff4d' },
+    maya:   { name: 'Maya',   initials: 'M', color: '#ff5da2' },
+    jordan: { name: 'Jordan', initials: 'J', color: '#8b9cff' },
+    priya:  { name: 'Priya',  initials: 'P', color: '#ffb27a' },
+    leo:    { name: 'Leo',    initials: 'L', color: '#6fe3c2' },
+  };
+
+  state = {
+    screen: 'create',
+    listTitle: "Dev's 25th \uD83C\uDF82",
+    date: 'Sat, Jun 27 \u00B7 8 PM',
+    draft: '',
+    toast: '',
+    confetti: [],
+    tasks: [
+      { id: 1, title: 'Book the karaoke room', emoji: '\uD83C\uDFA4', owner: this.M.maya,   done: true },
+      { id: 2, title: 'Order the cake',         emoji: '\uD83C\uDF70', owner: this.M.jordan, done: false },
+      { id: 3, title: 'Send the invite',        emoji: '\uD83D\uDC8C', owner: this.M.priya,  done: true },
+      { id: 4, title: 'Make the playlist',      emoji: '\uD83C\uDFB5', owner: null,          done: false },
+      { id: 5, title: 'Bring decorations',      emoji: '\uD83C\uDF88', owner: null,          done: false },
+      { id: 6, title: 'Pick the bar after',     emoji: '\uD83C\uDF78', owner: null,          done: false },
+      { id: 7, title: 'Collect $ for the gift', emoji: '\uD83C\uDF81', owner: this.M.you,    done: false },
+    ],
+  };
+
+  go(screen) {
+    if (this._scroll) { try { this._scroll.scrollTop = 0; } catch (e) {} }
+    this.setState({ screen });
+    if (screen === 'complete') this.fireConfetti();
+  }
+
+  callDibs(id) {
+    this.setState(st => ({
+      tasks: st.tasks.map(t => t.id === id ? { ...t, owner: this.M.you } : t),
+    }));
+    this.fireConfetti();
+    this.flash("Dibs! It's yours \uD83D\uDE4C");
+  }
+
+  toggleDone(id) {
+    this.setState(
+      st => ({ tasks: st.tasks.map(t => t.id === id ? { ...t, done: !t.done } : t) }),
+      () => {
+        if (this.state.tasks.length && this.state.tasks.every(t => t.done)) {
+          this.fireConfetti();
+          this.flash("\uD83C\uDF89 that's everything!");
+        }
+      }
+    );
+  }
+
+  fireConfetti() {
+    const colors = ['#c8ff4d', '#ff5da2', '#8b9cff', '#ffb27a', '#6fe3c2', '#f5f3ef'];
+    const pieces = Array.from({ length: 20 }, (_, i) => ({
+      id: 'c' + Date.now() + '_' + i,
+      style: {
+        position: 'absolute', top: '-14px', left: (Math.random() * 100) + '%',
+        width: (6 + Math.random() * 6) + 'px', height: (9 + Math.random() * 8) + 'px',
+        background: colors[i % colors.length], borderRadius: '2px',
+        animation: 'dibsConfetti ' + (900 + Math.random() * 750) + 'ms cubic-bezier(.2,.6,.4,1) ' + (Math.random() * 200) + 'ms both',
+      },
+    }));
+    this.setState({ confetti: pieces });
+    clearTimeout(this._cf);
+    this._cf = setTimeout(() => this.setState({ confetti: [] }), 1750);
+  }
+
+  addTask() {
+    const v = this.state.draft.trim();
+    if (!v) return;
+    this.setState(st => ({
+      tasks: [...st.tasks, { id: Date.now(), title: v, emoji: '\u2728', owner: null, done: false }],
+      draft: '',
+    }));
+  }
+
+  nudge() { this.flash('Nudged the group \uD83D\uDC4B'); }
+
+  flash(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 1900);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const tasks = s.tasks;
+    const total = tasks.length;
+    const doneCount = tasks.filter(t => t.done).length;
+    const needOwner = tasks.filter(t => !t.owner).length;
+    const pct = total ? doneCount / total : 0;
+    const ringCirc = 2 * Math.PI * 30;
+
+    const GS = "'Gabarito', sans-serif";
+    const avatarBase = (sz) => ({
+      width: sz, height: sz, borderRadius: '50%', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', fontFamily: GS,
+      fontWeight: 600, fontSize: sz <= 24 ? 11 : 12, color: '#0d0d0f',
+      border: '2px solid #0d0d0f', marginLeft: -8, flexShrink: 0,
+    });
+
+    const taskVMs = tasks.map(t => ({
+      id: t.id,
+      title: t.title,
+      emoji: t.emoji,
+      done: t.done,
+      hasOwner: !!t.owner,
+      unclaimed: !t.owner,
+      ownerName: t.owner ? t.owner.name : '',
+      ownerInitials: t.owner ? t.owner.initials : '',
+      ownerAvatarStyle: {
+        width: 24, height: 24, borderRadius: '50%', display: 'flex',
+        alignItems: 'center', justifyContent: 'center', fontFamily: GS,
+        fontWeight: 600, fontSize: 11, color: '#0d0d0f',
+        background: t.owner ? t.owner.color : 'transparent',
+      },
+      ownerWrapStyle: {
+        display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0,
+        ...(t.owner === this.M.you ? { animation: 'dibsPop .4s ease both' } : {}),
+      },
+      titleStyle: {
+        fontSize: 16,
+        fontWeight: 500,
+        color: t.done ? 'rgba(245,243,239,0.4)' : '#f5f3ef',
+        textDecoration: t.done ? 'line-through' : 'none',
+      },
+      checkFullStyle: {
+        width: 24, height: 24, borderRadius: '50%', cursor: 'pointer',
+        flexShrink: 0, display: 'flex', alignItems: 'center',
+        justifyContent: 'center', padding: 0,
+        ...(t.done
+          ? { background: '#c8ff4d', border: '2px solid #c8ff4d' }
+          : { background: 'transparent', border: '2px solid rgba(245,243,239,0.3)' }),
+      },
+      onToggle: () => this.toggleDone(t.id),
+      onDibs: () => this.callDibs(t.id),
+    }));
+
+    const crew = Object.values(this.M).map(m => ({
+      initials: m.initials,
+      cardAvatarStyle: { ...avatarBase(28), background: m.color },
+      listAvatarStyle: { ...avatarBase(30), background: m.color },
+    }));
+
+    const stepBase = {
+      border: 'none', cursor: 'pointer', fontFamily: GS, fontWeight: 600,
+      fontSize: 13, borderRadius: 99, padding: '9px 16px',
+    };
+    const mkStep = (key, label) => ({
+      label,
+      onClick: () => this.go(key),
+      style: s.screen === key
+        ? { ...stepBase, background: '#0d0d0f', color: '#f5f3ef' }
+        : { ...stepBase, background: 'rgba(13,13,15,0.06)', color: '#6b6862' },
+    });
+
+    return {
+      isCreate: s.screen === 'create',
+      isThread: s.screen === 'thread',
+      isList: s.screen === 'list',
+      isComplete: s.screen === 'complete',
+      listTitle: s.listTitle,
+      date: s.date,
+      draft: s.draft,
+      toast: s.toast,
+      tasks,
+      taskVMs,
+      crew,
+      total,
+      doneCount,
+      needOwner,
+      hasUnclaimed: needOwner > 0,
+      allDone: total > 0 && doneCount === total,
+      notAllDone: !(total > 0 && doneCount === total),
+      peopleCount: Object.keys(this.M).length,
+      hasConfetti: s.confetti.length > 0,
+      confetti: s.confetti,
+      pctText: Math.round(pct * 100) + '%',
+      ringCirc,
+      ringOffset: ringCirc * (1 - pct),
+      goCreate: () => this.go('create'),
+      goThread: () => this.go('thread'),
+      goList: () => this.go('list'),
+      goComplete: () => this.go('complete'),
+      restart: () => this.go('create'),
+      nudge: () => this.nudge(),
+      onTitleChange: e => this.setState({ listTitle: e.target.value }),
+      onDraftChange: e => this.setState({ draft: e.target.value }),
+      onDraftKey: e => { if (e.key === 'Enter') this.addTask(); },
+      steps: [mkStep('create', '1 \u00B7 Set up'), mkStep('thread', '2 \u00B7 Share'), mkStep('list', '3 \u00B7 List'), mkStep('complete', '4 \u00B7 Complete')],
+    };
+  }
+}
+</script>
+</body>
+</html>
