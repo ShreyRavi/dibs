@@ -25,6 +25,7 @@ export default function ListClient({ initial }: { initial: State }) {
   const [confettiKey, setConfettiKey] = useState(0);
   const [poppedTask, setPoppedTask] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [connected, setConnected] = useState(true);
   const myOps = useRef<Set<string>>(new Set());
 
   const memberById = useMemo(() => {
@@ -76,6 +77,7 @@ export default function ListClient({ initial }: { initial: State }) {
         );
     },
     resync,
+    setConnected,
   );
 
   // Ensure the device has a member; prompts for a name on first write.
@@ -200,6 +202,18 @@ export default function ListClient({ initial }: { initial: State }) {
       <div className="mt-4 flex items-center gap-2.5">
         {state.members.length > 0 && <AvatarStack members={state.members} />}
         <span className="font-body text-[13px] text-text-50">{crewLabel}</span>
+        {!connected && (
+          <span
+            className="ml-auto flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 font-body text-[12px] text-text-50"
+            aria-live="polite"
+          >
+            <span
+              className="h-2 w-2 rounded-full bg-text-40"
+              style={{ animation: "dibsToast 1s ease infinite alternate" }}
+            />
+            reconnecting…
+          </span>
+        )}
       </div>
 
       {/* Banners */}
@@ -260,6 +274,12 @@ export default function ListClient({ initial }: { initial: State }) {
           );
         })}
       </ul>
+
+      {total === 0 && (
+        <p className="mt-6 mb-2 text-center font-body text-[14px] text-text-40">
+          no tasks yet — add the first one ✨
+        </p>
+      )}
 
       {/* Add task */}
       <div

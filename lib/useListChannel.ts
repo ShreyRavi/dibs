@@ -11,11 +11,14 @@ export function useListChannel(
   listId: string,
   onEvent: (e: ListEvent) => void,
   onReconnect?: () => void,
+  onStatus?: (connected: boolean) => void,
 ) {
   const cb = useRef(onEvent);
   cb.current = onEvent;
   const rc = useRef(onReconnect);
   rc.current = onReconnect;
+  const st = useRef(onStatus);
+  st.current = onStatus;
 
   useEffect(() => {
     const sb = supabaseBrowser();
@@ -25,7 +28,16 @@ export function useListChannel(
         cb.current(msg.payload as ListEvent);
       })
       .subscribe((status) => {
-        if (status === "SUBSCRIBED") rc.current?.();
+        if (status === "SUBSCRIBED") {
+          st.current?.(true);
+          rc.current?.();
+        } else if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT" ||
+          status === "CLOSED"
+        ) {
+          st.current?.(false);
+        }
       });
 
     return () => {
