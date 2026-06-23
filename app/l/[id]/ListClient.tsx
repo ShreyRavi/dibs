@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useListChannel } from "@/lib/useListChannel";
 import { comparePosition } from "@/lib/position";
@@ -27,6 +27,7 @@ export default function ListClient({ initial }: { initial: State }) {
   const [draft, setDraft] = useState("");
   const [connected, setConnected] = useState(true);
   const myOps = useRef<Set<string>>(new Set());
+  const joinInFlight = useRef<Promise<string | null> | null>(null);
 
   const memberById = useMemo(() => {
     const m = new Map<string, Member>();
@@ -40,6 +41,17 @@ export default function ListClient({ initial }: { initial: State }) {
   const allDone = total > 0 && doneCount === total;
 
   const fireToast = useCallback((m: string) => setToast(m), []);
+
+  // Fire the celebration once when the list transitions to all-done — works for
+  // both a local toggle and a remote one (broadcast). Avoids reading stale state.
+  const prevAllDone = useRef(false);
+  useEffect(() => {
+    if (allDone && !prevAllDone.current) {
+      setConfettiKey((k) => k + 1);
+      fireToast("🎉 that's everything!");
+    }
+    prevAllDone.current = allDone;
+  }, [allDone, fireToast]);
 
   const applyTask = useCallback((t: Task) => {
     setState((s) => {
@@ -80,26 +92,36 @@ export default function ListClient({ initial }: { initial: State }) {
     setConnected,
   );
 
-  // Ensure the device has a member; prompts for a name on first write.
+  // Ensure the device has a member; prompts for a name on first write. Guarded
+  // by a single in-flight promise so two parallel claims can't create two
+  // members for the same person (race the outside review flagged).
   const ensureMember = useCallback(async (): Promise<string | null> => {
     if (state.you) return state.you;
+    if (joinInFlight.current) return joinInFlight.current;
     const name = window.prompt("What's your name?")?.trim();
     if (!name) return null;
-    const res = await fetch(`/api/lists/${state.id}/join`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name, op_id: newOpId() }),
-    });
-    if (!res.ok) return null;
-    const { member } = await res.json();
-    setState((s) => ({
-      ...s,
-      you: member.id,
-      members: s.members.some((m) => m.id === member.id)
-        ? s.members
-        : [...s.members, member],
-    }));
-    return member.id as string;
+    joinInFlight.current = (async () => {
+      const res = await fetch(`/api/lists/${state.id}/join`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name, op_id: newOpId() }),
+      });
+      if (!res.ok) return null;
+      const { member } = await res.json();
+      setState((s) => ({
+        ...s,
+        you: member.id,
+        members: s.members.some((m) => m.id === member.id)
+          ? s.members
+          : [...s.members, member],
+      }));
+      return member.id as string;
+    })();
+    try {
+      return await joinInFlight.current;
+    } finally {
+      joinInFlight.current = null;
+    }
   }, [state.you, state.id]);
 
   const callDibs = useCallback(
@@ -133,26 +155,21 @@ export default function ListClient({ initial }: { initial: State }) {
       const op_id = newOpId();
       myOps.current.add(op_id);
       const nextDone = !task.done;
-      applyTask({ ...task, done: nextDone, updated_at: new Date().toISOString() });
+      // Optimistic: flip `done` directly (bypass the staleness guard for our own
+      // action; do NOT fabricate updated_at — the server echo, which is strictly
+      // newer, then applies cleanly through applyTask).
+      setState((s) => ({
+        ...s,
+        tasks: s.tasks.map((t) => (t.id === task.id ? { ...t, done: nextDone } : t)),
+      }));
       const res = await fetch(`/api/tasks/${task.id}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "toggle", done: nextDone, op_id }),
       });
-      if (res.ok) {
-        const updated = (await res.json()).task as Task;
-        applyTask(updated);
-        // recompute all-done against the just-applied state
-        const willAllDone =
-          state.tasks.length > 0 &&
-          state.tasks.every((t) => (t.id === task.id ? nextDone : t.done));
-        if (willAllDone) {
-          setConfettiKey((k) => k + 1);
-          fireToast("🎉 that's everything!");
-        }
-      }
+      if (res.ok) applyTask((await res.json()).task as Task);
     },
-    [applyTask, fireToast, state.tasks],
+    [applyTask],
   );
 
   const addTask = useCallback(async () => {
