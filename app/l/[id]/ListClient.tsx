@@ -106,7 +106,7 @@ export default function ListClient({
         {state.title}
       </h1>
       <p className="mt-1 font-body text-[13px] text-text-50">
-        {state.members.length === 1
+        {state.members.length <= 1
           ? "You"
           : `You + ${state.members.length - 1} other${state.members.length > 2 ? "s" : ""}`}
       </p>
