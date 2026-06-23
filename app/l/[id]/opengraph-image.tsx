@@ -30,8 +30,11 @@ export default async function Og({ params }: { params: Promise<{ id: string }> }
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          background:
-            "radial-gradient(circle at 25% 20%, rgba(255,93,162,0.18), transparent 55%), radial-gradient(circle at 80% 25%, rgba(200,255,77,0.16), transparent 55%), #0d0d0f",
+          // Satori needs backgroundColor + backgroundImage split — a solid hex
+          // inside the gradient list is rejected ("Invalid background image").
+          backgroundColor: "#0d0d0f",
+          backgroundImage:
+            "radial-gradient(circle at 25% 20%, rgba(255,93,162,0.18), transparent 55%), radial-gradient(circle at 80% 25%, rgba(200,255,77,0.16), transparent 55%)",
           padding: "96px",
           color: "#f5f3ef",
           fontFamily: "sans-serif",
