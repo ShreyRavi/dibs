@@ -79,8 +79,7 @@ export default function SetUp() {
         return;
       }
       const { listId } = await res.json();
-      // Share surface is P3; for now go straight to the list.
-      router.push(`/l/${listId}`);
+      router.push(`/l/${listId}/share`);
     } catch {
       setSubmitting(false);
     }
