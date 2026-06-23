@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { makeToken, sign, cookieName } from "@/lib/identity";
 import { colorForIndex } from "@/lib/colors";
 import { positionAfter } from "@/lib/position";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 const SeedTask = z.object({
   emoji: z.string().min(1).max(8).default("✨"),
@@ -23,6 +24,15 @@ const Body = z.object({
 // POST /api/lists — create a list + seed tasks. Optionally create a host member
 // (+ set their device cookie) if a hostName is given.
 export async function POST(req: NextRequest) {
+  // Soft abuse guard: cap list creation per client (best-effort, per instance).
+  const rl = rateLimit(`create:${clientKey(req.headers)}`, 20, 60 * 60 * 1000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "slow down — too many lists" },
+      { status: 429, headers: { "retry-after": String(Math.ceil(rl.retryAfterMs / 1000)) } },
+    );
+  }
+
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
