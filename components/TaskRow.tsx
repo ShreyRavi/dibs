@@ -75,6 +75,7 @@ export function TaskRow({
         ) : (
           <button
             onClick={onCallDibs}
+            aria-label={`Call dibs on ${task.title}`}
             className="min-h-11 rounded-full bg-pink px-[15px] font-display text-[13px] font-bold text-bg shadow-pink"
           >
             Call dibs
