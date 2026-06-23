@@ -1,29 +1,50 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useListChannel } from "@/lib/useListChannel";
 import { comparePosition } from "@/lib/position";
-import type { ListState, Task, ListEvent } from "@/lib/types";
+import { formatEventAt } from "@/lib/format";
+import { Washes } from "@/components/Washes";
+import { ProgressRing } from "@/components/ProgressRing";
+import { AvatarStack } from "@/components/Avatar";
+import { TaskRow } from "@/components/TaskRow";
+import { Toast } from "@/components/Toast";
+import { Confetti } from "@/components/Confetti";
+import type { ListState, Task, Member, ListEvent } from "@/lib/types";
 
 const newOpId = () =>
-  (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`);
+  globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 
-// Minimal interactive List. Demonstrates the realtime reconciliation contract;
-// full pixel-accurate UI (TaskRow, ProgressRing, confetti, NamePrompt) is T6/T9.
-export default function ListClient({
-  initial,
-}: {
-  initial: ListState & { you: string | null };
-}) {
-  const [state, setState] = useState(initial);
-  const myOps = useRef<Set<string>>(new Set()); // op_ids this client originated
+type State = ListState & { you: string | null };
+
+export default function ListClient({ initial }: { initial: State }) {
+  const router = useRouter();
+  const [state, setState] = useState<State>(initial);
+  const [toast, setToast] = useState("");
+  const [confettiKey, setConfettiKey] = useState(0);
+  const [poppedTask, setPoppedTask] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const myOps = useRef<Set<string>>(new Set());
+
+  const memberById = useMemo(() => {
+    const m = new Map<string, Member>();
+    state.members.forEach((x) => m.set(x.id, x));
+    return m;
+  }, [state.members]);
+
+  const total = state.tasks.length;
+  const doneCount = state.tasks.filter((t) => t.done).length;
+  const needOwner = state.tasks.filter((t) => !t.owner_member_id).length;
+  const allDone = total > 0 && doneCount === total;
+
+  const fireToast = useCallback((m: string) => setToast(m), []);
 
   const applyTask = useCallback((t: Task) => {
     setState((s) => {
       const idx = s.tasks.findIndex((x) => x.id === t.id);
       if (idx >= 0) {
-        // staleness guard: only apply strictly-newer updates
-        if (t.updated_at <= s.tasks[idx].updated_at) return s;
+        if (t.updated_at <= s.tasks[idx].updated_at) return s; // staleness guard
         const tasks = s.tasks.slice();
         tasks[idx] = t;
         return { ...s, tasks };
@@ -57,92 +78,224 @@ export default function ListClient({
     resync,
   );
 
+  // Ensure the device has a member; prompts for a name on first write.
+  const ensureMember = useCallback(async (): Promise<string | null> => {
+    if (state.you) return state.you;
+    const name = window.prompt("What's your name?")?.trim();
+    if (!name) return null;
+    const res = await fetch(`/api/lists/${state.id}/join`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name, op_id: newOpId() }),
+    });
+    if (!res.ok) return null;
+    const { member } = await res.json();
+    setState((s) => ({
+      ...s,
+      you: member.id,
+      members: s.members.some((m) => m.id === member.id)
+        ? s.members
+        : [...s.members, member],
+    }));
+    return member.id as string;
+  }, [state.you, state.id]);
+
   const callDibs = useCallback(
     async (taskId: string) => {
+      const me = await ensureMember();
+      if (!me) return;
       const op_id = newOpId();
       myOps.current.add(op_id);
-
-      // list-first: if not yet a member, capture name on this first claim.
-      if (!state.you) {
-        const name = window.prompt("Your name?")?.trim();
-        if (!name) return;
-        const j = await fetch(`/api/lists/${state.id}/join`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ name, op_id: newOpId() }),
-        });
-        if (!j.ok) return;
-        const { member } = await j.json();
-        setState((s) => ({
-          ...s,
-          you: member.id,
-          members: s.members.some((m) => m.id === member.id)
-            ? s.members
-            : [...s.members, member],
-        }));
-      }
-
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "claim", op_id }),
       });
       if (res.status === 409) {
-        // lost the race — resync to show the real owner
         await resync();
+        fireToast("someone got there first 🤏");
         return;
       }
-      if (res.ok) applyTask((await res.json()).task);
+      if (res.ok) {
+        applyTask((await res.json()).task);
+        setPoppedTask(taskId);
+        setConfettiKey((k) => k + 1);
+        fireToast("Dibs! It's yours 🙌");
+      }
     },
-    [state.you, state.id, applyTask, resync],
+    [ensureMember, applyTask, resync, fireToast],
   );
 
-  const nameFor = (id: string | null) =>
-    state.members.find((m) => m.id === id)?.name ?? null;
+  const toggleDone = useCallback(
+    async (task: Task) => {
+      const op_id = newOpId();
+      myOps.current.add(op_id);
+      const nextDone = !task.done;
+      applyTask({ ...task, done: nextDone, updated_at: new Date().toISOString() });
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "toggle", done: nextDone, op_id }),
+      });
+      if (res.ok) {
+        const updated = (await res.json()).task as Task;
+        applyTask(updated);
+        // recompute all-done against the just-applied state
+        const willAllDone =
+          state.tasks.length > 0 &&
+          state.tasks.every((t) => (t.id === task.id ? nextDone : t.done));
+        if (willAllDone) {
+          setConfettiKey((k) => k + 1);
+          fireToast("🎉 that's everything!");
+        }
+      }
+    },
+    [applyTask, fireToast, state.tasks],
+  );
+
+  const addTask = useCallback(async () => {
+    const text = draft.trim();
+    if (!text) return;
+    const me = await ensureMember();
+    if (!me) return;
+    setDraft("");
+    const op_id = newOpId();
+    myOps.current.add(op_id);
+    const res = await fetch(`/api/lists/${state.id}/tasks`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ emoji: "✨", title: text, op_id }),
+    });
+    if (res.ok) applyTask((await res.json()).task);
+  }, [draft, ensureMember, state.id, applyTask]);
+
+  const crewLabel =
+    state.members.length <= 1
+      ? "You"
+      : `You + ${state.members.length - 1} other${state.members.length > 2 ? "s" : ""}`;
 
   return (
-    <main className="screen flex flex-col px-5 pt-14 pb-8">
-      <h1 className="font-display text-[28px] font-bold tracking-[-0.8px]">
-        {state.title}
-      </h1>
-      <p className="mt-1 font-body text-[13px] text-text-50">
-        {state.members.length <= 1
-          ? "You"
-          : `You + ${state.members.length - 1} other${state.members.length > 2 ? "s" : ""}`}
-      </p>
+    <main className="screen flex flex-col px-5 pt-14 pb-[30px]">
+      <Washes pink="20% 18%" lime="80% 12%" />
 
-      <ul className="mt-6 flex flex-col gap-[9px]">
-        {state.tasks.map((t) => (
-          <li
-            key={t.id}
-            className="flex items-center gap-3 rounded-[15px] border border-hairline bg-surface px-[14px] py-[13px]"
+      {/* Breadcrumb */}
+      <div className="font-body text-[12px] text-text-40">← shared list</div>
+
+      {/* Title + progress ring */}
+      <div className="mt-2 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-[28px] font-bold leading-[1.1] tracking-[-0.8px]">
+            {state.title}
+          </h1>
+          {formatEventAt(state.event_at) && (
+            <p className="mt-1 font-body text-[13px] text-text-50">
+              {formatEventAt(state.event_at)}
+            </p>
+          )}
+        </div>
+        <ProgressRing done={doneCount} total={total} />
+      </div>
+
+      {/* Crew */}
+      <div className="mt-4 flex items-center gap-2.5">
+        {state.members.length > 0 && <AvatarStack members={state.members} />}
+        <span className="font-body text-[13px] text-text-50">{crewLabel}</span>
+      </div>
+
+      {/* Banners */}
+      {allDone ? (
+        <div
+          className="mt-4 rounded-[14px] px-4 py-3 text-center font-body text-[14px] font-bold text-lime"
+          style={{
+            background: "rgba(200,255,77,0.12)",
+            border: "1px solid rgba(200,255,77,0.4)",
+            boxShadow: "0 0 30px rgba(200,255,77,0.10)",
+          }}
+        >
+          🎉 every task done — let&apos;s gooo
+        </div>
+      ) : needOwner > 0 ? (
+        <div
+          className="mt-4 flex items-center gap-3 rounded-[14px] px-4 py-3"
+          style={{
+            background: "rgba(255,93,162,0.1)",
+            border: "1px solid rgba(255,93,162,0.3)",
+          }}
+        >
+          <span className="font-body text-[14px] font-semibold text-pink">
+            ⚡ {needOwner} task{needOwner > 1 ? "s" : ""} need an owner
+          </span>
+          <button
+            onClick={() => fireToast("Nudged the group 👋")}
+            className="ml-auto min-h-9 rounded-full px-3 font-display text-[13px] font-semibold text-pink"
+            style={{ border: "1px solid rgba(255,93,162,0.5)" }}
           >
-            <span className="font-body text-[16px]">
-              {t.emoji} {t.title}
-            </span>
-            <span className="ml-auto">
-              {t.owner_member_id ? (
-                <span className="font-body text-[13px] font-semibold text-text-60">
-                  {nameFor(t.owner_member_id)}
-                </span>
-              ) : (
-                <button
-                  onClick={() => callDibs(t.id)}
-                  className="min-h-[44px] rounded-full bg-pink px-[15px] font-display text-[13px] font-bold text-bg shadow-pink"
-                >
-                  Call dibs
-                </button>
-              )}
-            </span>
-          </li>
-        ))}
+            Nudge 👋
+          </button>
+        </div>
+      ) : null}
+
+      {/* Tasks */}
+      <ul className="mt-4 flex flex-col gap-[9px]">
+        {state.tasks.map((t) => {
+          // An owned task is owned even if its member hasn't synced yet
+          // (broadcast ordering): fall back to a placeholder chip, not "Call dibs".
+          const owner = t.owner_member_id
+            ? memberById.get(t.owner_member_id) ?? {
+                id: t.owner_member_id,
+                name: "…",
+                color: "#6b6862",
+              }
+            : null;
+          return (
+            <TaskRow
+              key={t.id}
+              task={t}
+              owner={owner}
+              isYou={!!state.you && t.owner_member_id === state.you}
+              popOwner={poppedTask === t.id}
+              onCallDibs={() => callDibs(t.id)}
+              onToggle={() => toggleDone(t)}
+            />
+          );
+        })}
       </ul>
 
-      {state.tasks.length === 0 && (
-        <p className="mt-10 text-center font-body text-[14px] text-text-40">
-          no tasks yet — add the first one ✨
-        </p>
-      )}
+      {/* Add task */}
+      <div
+        className="mt-[9px] flex items-center gap-3 rounded-[14px] px-[14px] py-[13px]"
+        style={{ border: "1px dashed rgba(255,255,255,0.12)" }}
+      >
+        <span aria-hidden className="text-text-40">+</span>
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addTask()}
+          placeholder="Add a task for the group…"
+          aria-label="Add a task"
+          className="w-full bg-transparent font-body text-[16px] text-text caret-[var(--lime)] outline-none placeholder:text-text-40"
+        />
+      </div>
+
+      {/* Complete / wrap-up */}
+      <button
+        onClick={() => router.push(`/l/${state.id}/complete`)}
+        className={
+          allDone
+            ? "mt-6 w-full rounded-[16px] bg-lime px-4 py-4 font-display text-[17px] font-bold text-bg shadow-lime-cta"
+            : "mt-6 w-full rounded-[16px] px-4 py-4 font-display text-[16px] font-bold text-text"
+        }
+        style={allDone ? undefined : { border: "1px solid rgba(245,243,239,0.18)" }}
+      >
+        {allDone ? "Complete the event 🎉" : "Wrap up the event →"}
+      </button>
+
+      <p className="mt-3 text-center font-body text-[12px] text-text-40">
+        Synced with everyone in {state.title}
+      </p>
+
+      {toast && <Toast message={toast} onDone={() => setToast("")} />}
+      <Confetti fireKey={confettiKey} />
     </main>
   );
 }

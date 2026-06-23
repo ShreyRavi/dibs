@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Washes } from "@/components/Washes";
 import { Stamp } from "@/components/Stamp";
+import { formatEventAt } from "@/lib/format";
 
 interface DraftTask {
   id: string;
@@ -22,18 +23,6 @@ function defaultEventAt(): string {
   // datetime-local wants "YYYY-MM-DDTHH:mm" in local time
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function formatEventAt(local: string): string {
-  const d = new Date(local);
-  if (isNaN(d.getTime())) return "";
-  return d.toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: d.getMinutes() ? "2-digit" : undefined,
-  });
 }
 
 // Auto-suggested starter tasks (handoff Set Up is pre-populated). Editable.

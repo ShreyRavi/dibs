@@ -49,6 +49,23 @@ body {
   overflow: hidden;
 }
 
+/* Signature motion (handoff). */
+@keyframes dibsConfetti {
+  to {
+    transform: translateY(440px) rotate(680deg);
+    opacity: 0;
+  }
+}
+@keyframes dibsPop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes dibsToast {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Accessibility: honor reduced-motion — confetti/pop become calm (handoff a11y spec). */
 @media (prefers-reduced-motion: reduce) {
   *,
