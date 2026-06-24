@@ -12,7 +12,7 @@ import type { Member } from "@/lib/types";
 // Complete payoff screen. Fires confetti once on entry (handoff). Reduced-motion
 // users get the static seal without confetti (Confetti self-suppresses).
 export default function CompleteClient({
-  listId,
+  code,
   title,
   sub,
   tasksDone,
@@ -20,7 +20,7 @@ export default function CompleteClient({
   droppedBalls,
   members,
 }: {
-  listId: string;
+  code: string;
   title: string;
   sub: string;
   tasksDone: number;
@@ -62,13 +62,13 @@ export default function CompleteClient({
 
       <div className="mt-auto w-full pt-10">
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/new")}
           className="w-full rounded-[16px] bg-lime px-4 py-4 font-display text-[17px] font-bold text-bg shadow-lime-cta"
         >
           Plan the next one 🎉
         </button>
         <button
-          onClick={() => router.push(`/l/${listId}`)}
+          onClick={() => router.push(`/l/${code}`)}
           className="mt-3 w-full rounded-[16px] px-4 py-3.5 font-display text-[15px] font-bold text-text"
           style={{ border: "1px solid rgba(245,243,239,0.18)" }}
         >

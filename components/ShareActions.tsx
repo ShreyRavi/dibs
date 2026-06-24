@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 // Copy-link + native-share + open-list actions for the share surface (client).
-export function ShareActions({ listId, title }: { listId: string; title: string }) {
+export function ShareActions({ code, title }: { code: string; title: string }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
   const url =
-    typeof window !== "undefined" ? `${window.location.origin}/l/${listId}` : "";
+    typeof window !== "undefined" ? `${window.location.origin}/l/${code}` : "";
 
   async function share() {
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -49,7 +49,7 @@ export function ShareActions({ listId, title }: { listId: string; title: string 
         {copied ? "Copied ✓" : "Copy link"}
       </button>
       <button
-        onClick={() => router.push(`/l/${listId}`)}
+        onClick={() => router.push(`/l/${code}`)}
         className="w-full py-2 font-body text-[14px] text-text-50"
       >
         Open the list →

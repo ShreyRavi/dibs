@@ -316,7 +316,7 @@ export default function ListClient({ initial }: { initial: State }) {
 
       {/* Complete / wrap-up */}
       <button
-        onClick={() => router.push(`/l/${state.id}/complete`)}
+        onClick={() => router.push(`/l/${state.code}/complete`)}
         className={
           allDone
             ? "mt-6 w-full rounded-[16px] bg-lime px-4 py-4 font-display text-[17px] font-bold text-bg shadow-lime-cta"

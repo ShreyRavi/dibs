@@ -14,29 +14,29 @@ export const dynamic = "force-dynamic";
 export default async function SharePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ code: string }>;
 }) {
-  const { id } = await params;
+  const { code } = await params;
   const db = supabaseAdmin();
 
   const { data: list } = await db
     .from("dibs_lists")
-    .select("id, title, event_at, shared")
-    .eq("id", id)
+    .select("id, code, title, event_at, shared")
+    .eq("code", code)
     .single();
   if (!list) notFound();
 
   // Lock the title once shared (so the cached OG can't go stale).
   if (!list.shared) {
-    await db.from("dibs_lists").update({ shared: true }).eq("id", id);
+    await db.from("dibs_lists").update({ shared: true }).eq("id", list.id);
   }
 
   const [{ data: members }, { data: tasks }] = await Promise.all([
-    db.from("dibs_members").select("id, name, color").eq("list_id", id),
+    db.from("dibs_members").select("id, name, color").eq("list_id", list.id),
     db
       .from("dibs_tasks")
       .select("id, done, owner_member_id")
-      .eq("list_id", id)
+      .eq("list_id", list.id)
       .is("deleted_at", null),
   ]);
 
@@ -75,7 +75,7 @@ export default async function SharePage({
         />
       </div>
 
-      <ShareActions listId={list.id} title={list.title} />
+      <ShareActions code={list.code} title={list.title} />
 
       <p className="mt-4 text-center font-body text-[12px] text-text-40">
         No login, no app — anyone with the link can call dibs ✨

@@ -5,6 +5,7 @@ import { makeToken, sign, cookieName } from "@/lib/identity";
 import { colorForIndex } from "@/lib/colors";
 import { positionAfter } from "@/lib/position";
 import { rateLimit, clientKey } from "@/lib/rateLimit";
+import { generateCode } from "@/lib/code";
 
 const SeedTask = z.object({
   emoji: z.string().min(1).max(8).default("✨"),
@@ -40,15 +41,29 @@ export async function POST(req: NextRequest) {
   const { title, event_at, hostName, tasks } = parsed.data;
   const db = supabaseAdmin();
 
-  const { data: list, error: listErr } = await db
-    .from("dibs_lists")
-    .insert({ title, event_at: event_at ?? null })
-    .select("id")
-    .single();
-  if (listErr || !list) {
+  // Insert with a short public code; retry a few times on the rare unique clash.
+  let listId = "";
+  let code = "";
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = generateCode();
+    const { data: list, error: listErr } = await db
+      .from("dibs_lists")
+      .insert({ title, event_at: event_at ?? null, code: candidate })
+      .select("id, code")
+      .single();
+    if (list) {
+      listId = list.id as string;
+      code = list.code as string;
+      break;
+    }
+    // 23505 = unique_violation on code → try a new code
+    if (listErr && listErr.code !== "23505") {
+      return NextResponse.json({ error: "could not create list" }, { status: 500 });
+    }
+  }
+  if (!listId) {
     return NextResponse.json({ error: "could not create list" }, { status: 500 });
   }
-  const listId = list.id as string;
 
   if (tasks.length) {
     let pos: string | null = null;
@@ -80,7 +95,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const res = NextResponse.json({ listId, memberId: hostId });
+  const res = NextResponse.json({ listId, code, memberId: hostId });
   if (hostId) {
     res.cookies.set(cookieName(listId), makeToken(hostId, listId), {
       httpOnly: true,

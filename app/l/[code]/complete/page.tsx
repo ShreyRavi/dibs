@@ -11,24 +11,24 @@ export const dynamic = "force-dynamic";
 export default async function CompletePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ code: string }>;
 }) {
-  const { id } = await params;
+  const { code } = await params;
   const db = supabaseAdmin();
 
   const { data: list } = await db
     .from("dibs_lists")
-    .select("id, title, event_at")
-    .eq("id", id)
+    .select("id, code, title, event_at")
+    .eq("code", code)
     .single();
   if (!list) notFound();
 
   const [{ data: members }, { data: tasks }] = await Promise.all([
-    db.from("dibs_members").select("id, name, color").eq("list_id", id),
+    db.from("dibs_members").select("id, name, color").eq("list_id", list.id),
     db
       .from("dibs_tasks")
       .select("done, owner_member_id")
-      .eq("list_id", id)
+      .eq("list_id", list.id)
       .is("deleted_at", null),
   ]);
 
@@ -39,7 +39,7 @@ export default async function CompletePage({
 
   return (
     <CompleteClient
-      listId={list.id}
+      code={list.code}
       title={list.title}
       sub={`${date ? `${date} · ` : ""}pulled off ⚡`}
       tasksDone={tasksDone}

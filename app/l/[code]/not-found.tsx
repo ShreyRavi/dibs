@@ -21,7 +21,7 @@ export default function ListNotFound() {
         the link may have expired or the event already wrapped
       </p>
       <Link
-        href="/"
+        href="/new"
         className="mt-6 inline-flex min-h-[44px] items-center rounded-full border border-hairline-strong px-5 font-display text-[15px] font-bold text-text"
       >
         start your own list →

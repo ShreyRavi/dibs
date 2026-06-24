@@ -12,13 +12,13 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ code: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
+  const { code } = await params;
   const { data: list } = await supabaseAdmin()
     .from("dibs_lists")
     .select("title, event_at")
-    .eq("id", id)
+    .eq("code", code)
     .single();
   if (!list) return { title: "Dibs — list not found" };
   const date = formatEventAt(list.event_at);
@@ -31,38 +31,38 @@ export async function generateMetadata({
   };
 }
 
-// Server-render the initial list snapshot (first paint). A cold visitor lands
-// here in read-only mode — no name wall (the NamePrompt fires on first claim,
-// handled client-side in ListClient). Full pixel-accurate List is T6.
+// Public list page — resolved by the short permalink code. A cold visitor lands
+// here in read-only mode (no name wall); the NamePrompt fires on first claim.
 export default async function ListPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ code: string }>;
 }) {
-  const { id: listId } = await params;
+  const { code } = await params;
   const db = supabaseAdmin();
 
   const { data: list } = await db
     .from("dibs_lists")
-    .select("id, title, event_at, shared")
-    .eq("id", listId)
+    .select("id, code, title, event_at, shared")
+    .eq("code", code)
     .single();
   if (!list) notFound();
 
   const [{ data: members }, { data: tasks }] = await Promise.all([
-    db.from("dibs_members").select("id, name, color").eq("list_id", listId),
+    db.from("dibs_members").select("id, name, color").eq("list_id", list.id),
     db
       .from("dibs_tasks")
       .select("id, emoji, title, owner_member_id, done, position, updated_at")
-      .eq("list_id", listId)
+      .eq("list_id", list.id)
       .is("deleted_at", null)
       .order("position", { ascending: true }),
   ]);
 
-  const me = await requireMember(listId);
+  const me = await requireMember(list.id);
 
   const initial: ListState & { you: string | null } = {
     id: list.id,
+    code: list.code,
     title: list.title,
     event_at: list.event_at,
     shared: list.shared,

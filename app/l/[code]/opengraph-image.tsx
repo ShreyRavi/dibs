@@ -10,12 +10,12 @@ export const alt = "A shared Dibs list";
 // Static OG card (design decision): brand + title + date + "shared list" only.
 // No live progress/crew — the unfurl bot is cookieless and iMessage caches the
 // preview per-URL, so live state can't reach the thread. Live state is in-app.
-export default async function Og({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function Og({ params }: { params: Promise<{ code: string }> }) {
+  const { code } = await params;
   const { data: list } = await supabaseAdmin()
     .from("dibs_lists")
     .select("title, event_at")
-    .eq("id", id)
+    .eq("code", code)
     .single();
 
   const title = list?.title ?? "A shared list";
