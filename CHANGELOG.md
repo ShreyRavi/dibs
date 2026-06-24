@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0.0 (2026-06-23)
+
+### Changed
+- **Homepage is now a landing/demo + create CTA** — no longer a pre-filled "Dev's
+  25th" event. The Set Up flow moved to `/new` and starts blank ("Name your event").
+  Home shows what Dibs is, a static demo of the dibs mechanic, and a "Create a list"
+  button.
+
+### Added
+- **Short permalinks** — every list now has a 7-char public code; the URL is
+  `/l/{code}` (e.g. `/l/LNDxktS`) instead of a long UUID. Internal FKs still use the
+  uuid; the code is resolved at the route boundary. `dibs_lists.code` migration
+  (`0002`), unique + insert-retry on collision.
+
 ## 0.1.0.0 (2026-06-23)
 
 First release — Dibs MVP. A frictionless shared to-do list for ad-hoc group
