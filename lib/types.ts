@@ -18,6 +18,7 @@ export interface Task {
 
 export interface ListState {
   id: string;
+  code: string;
   title: string;
   event_at: string | null;
   shared: boolean;
