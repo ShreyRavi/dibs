@@ -188,6 +188,19 @@ export default function ListClient({ initial }: { initial: State }) {
     if (res.ok) applyTask((await res.json()).task);
   }, [draft, ensureMember, state.id, applyTask]);
 
+  // Personal restore link → carry this identity to another device (no dup member).
+  const copyMyLink = useCallback(async () => {
+    const res = await fetch(`/api/lists/${state.id}/mylink`);
+    if (!res.ok) return;
+    const { url } = await res.json();
+    try {
+      await navigator.clipboard.writeText(url);
+      fireToast("Your link copied — open it on another device 📱");
+    } catch {
+      fireToast(url);
+    }
+  }, [state.id, fireToast]);
+
   const crewLabel =
     state.members.length <= 1
       ? "You"
@@ -327,7 +340,16 @@ export default function ListClient({ initial }: { initial: State }) {
         {allDone ? "Complete the event 🎉" : "Wrap up the event →"}
       </button>
 
-      <p className="mt-3 text-center font-body text-[12px] text-text-40">
+      {state.you && (
+        <button
+          onClick={copyMyLink}
+          className="mt-3 w-full text-center font-body text-[12px] text-text-40 underline-offset-2 hover:underline"
+        >
+          📱 Use on another device
+        </button>
+      )}
+
+      <p className="mt-2 text-center font-body text-[12px] text-text-40">
         Synced with everyone in {state.title}
       </p>
 

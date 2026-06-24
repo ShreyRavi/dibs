@@ -21,7 +21,7 @@ export async function POST(
   const { id: listId } = await ctx.params;
 
   // Soft abuse guard on an unauthenticated, row-creating endpoint.
-  const rl = rateLimit(`join:${clientKey(req.headers)}`, 30, 60 * 60 * 1000);
+  const rl = await rateLimit(`join:${clientKey(req.headers)}`, 30, 60 * 60 * 1000);
   if (!rl.ok) {
     return NextResponse.json(
       { error: "slow down" },

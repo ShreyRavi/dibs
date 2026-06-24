@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Washes } from "@/components/Washes";
 import { Stamp } from "@/components/Stamp";
-import { formatEventAt } from "@/lib/format";
+import { DateField } from "@/components/DateField";
 
 interface DraftTask {
   id: string;
@@ -96,17 +96,8 @@ export default function NewGroup() {
         className="mt-4 w-full bg-transparent font-display text-[32px] font-bold leading-[1.1] tracking-[-1px] text-text caret-[var(--lime)] outline-none placeholder:text-text-40"
       />
 
-      {/* Date */}
-      <label className="mt-1 flex items-center gap-2 font-body text-[14px] text-text-50">
-        <input
-          type="datetime-local"
-          aria-label="Event date and time"
-          value={eventAt}
-          onChange={(e) => setEventAt(e.target.value)}
-          className="bg-transparent text-text-50 outline-none [color-scheme:dark]"
-        />
-        {eventAt && <span className="text-text-40">· {formatEventAt(eventAt)}</span>}
-      </label>
+      {/* Date — single clean control (opens the OS picker) */}
+      <DateField value={eventAt} onChange={setEventAt} />
 
       {/* Section label */}
       <div className="mb-3 mt-[30px] font-display text-[12px] font-semibold uppercase tracking-[1.5px] text-text-40">

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0.0 (2026-06-23)
+
+### Added
+- **Cross-device identity restore link** — `GET /api/lists/[id]/mylink` mints a personal
+  link; `/r/{code}/{token}` adopts the same member on another device (no duplicate). Bad
+  tokens set no cookie. Surfaced as "Use on another device" on the List.
+- **Pluggable distributed rate limit** — Upstash Redis REST when `UPSTASH_REDIS_REST_*`
+  env is set, in-memory otherwise.
+
+### Changed
+- **Set Up date control** — single clean line that opens the OS picker (`showPicker()`);
+  dropped the redundant native widget text.
+- **OG image** — long immutable `cache-control` so repeat unfurls hit the CDN.
+
+
 ## 0.2.0.0 (2026-06-23)
 
 ### Changed

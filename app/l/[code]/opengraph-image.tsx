@@ -106,6 +106,13 @@ export default async function Og({ params }: { params: Promise<{ code: string }>
         </div>
       </div>
     ),
-    { ...size },
+    {
+      ...size,
+      // The card is static per list (title locks on first share), so cache hard.
+      // Unfurl bots fetch this once; repeat opens hit the CDN, not the renderer.
+      headers: {
+        "cache-control": "public, immutable, no-transform, max-age=86400, s-maxage=604800",
+      },
+    },
   );
 }

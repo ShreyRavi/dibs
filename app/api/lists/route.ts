@@ -26,7 +26,7 @@ const Body = z.object({
 // (+ set their device cookie) if a hostName is given.
 export async function POST(req: NextRequest) {
   // Soft abuse guard: cap list creation per client (best-effort, per instance).
-  const rl = rateLimit(`create:${clientKey(req.headers)}`, 20, 60 * 60 * 1000);
+  const rl = await rateLimit(`create:${clientKey(req.headers)}`, 20, 60 * 60 * 1000);
   if (!rl.ok) {
     return NextResponse.json(
       { error: "slow down — too many lists" },
