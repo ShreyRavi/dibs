@@ -1,184 +1,98 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Washes } from "@/components/Washes";
 import { Stamp } from "@/components/Stamp";
-import { formatEventAt } from "@/lib/format";
 
-interface DraftTask {
-  id: string;
+// Landing — what Dibs is, a quick visual demo of the mechanic, and a way to
+// start a new group. Not a pre-filled event (that lives at /new).
+
+function DemoRow({
+  emoji,
+  title,
+  state,
+}: {
   emoji: string;
   title: string;
-}
-
-const uid = () =>
-  globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
-
-// Default the event to the next Saturday 8 PM (matches the handoff vibe).
-function defaultEventAt(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7 || 7));
-  d.setHours(20, 0, 0, 0);
-  // datetime-local wants "YYYY-MM-DDTHH:mm" in local time
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-// Auto-suggested starter tasks (handoff Set Up is pre-populated). Editable.
-const SUGGESTED: Omit<DraftTask, "id">[] = [
-  { emoji: "🎤", title: "Book the karaoke room" },
-  { emoji: "🍰", title: "Order the cake" },
-  { emoji: "💌", title: "Send the invite" },
-  { emoji: "🎵", title: "Make the playlist" },
-  { emoji: "🎈", title: "Bring decorations" },
-  { emoji: "🍸", title: "Pick the bar after" },
-  { emoji: "🎁", title: "Collect $ for the gift" },
-];
-
-// Split a leading emoji off a typed task ("🍕 pizza" → {emoji,title}).
-function splitEmoji(input: string): { emoji: string; title: string } {
-  const m = input.trim().match(/^(\p{Extended_Pictographic}(?:‍\p{Extended_Pictographic})*)\s*(.*)$/u);
-  if (m && m[2]) return { emoji: m[1], title: m[2] };
-  return { emoji: "✨", title: input.trim() };
-}
-
-export default function SetUp() {
-  const router = useRouter();
-  const [title, setTitle] = useState("Dev's 25th 🎂");
-  const [eventAt, setEventAt] = useState(defaultEventAt());
-  const [tasks, setTasks] = useState<DraftTask[]>(
-    SUGGESTED.map((t) => ({ ...t, id: uid() })),
+  state: { kind: "done"; who: string; color: string } | { kind: "dibs" };
+}) {
+  return (
+    <li className="flex items-center gap-3 rounded-[15px] border border-hairline bg-surface px-[14px] py-[11px]">
+      {state.kind === "done" ? (
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-lime">
+          <span className="font-display text-[13px] font-extrabold text-bg">✓</span>
+        </span>
+      ) : (
+        <span
+          aria-hidden
+          className="h-6 w-6 shrink-0 rounded-full"
+          style={{ border: "2px dashed rgba(245,243,239,0.22)" }}
+        />
+      )}
+      <span
+        className={`font-body text-[15px] ${state.kind === "done" ? "text-text-40 line-through" : ""}`}
+      >
+        {emoji} {title}
+      </span>
+      <span className="ml-auto shrink-0">
+        {state.kind === "done" ? (
+          <span className="flex items-center gap-1.5">
+            <span
+              className="grid h-6 w-6 place-items-center rounded-full font-display text-[11px] font-bold text-bg"
+              style={{ background: state.color, border: "2px solid #0d0d0f" }}
+            >
+              {state.who[0]}
+            </span>
+            <span className="font-body text-[12px] font-semibold text-text-60">
+              {state.who}
+            </span>
+          </span>
+        ) : (
+          <span className="rounded-full bg-pink px-[13px] py-[7px] font-display text-[12px] font-bold text-bg shadow-pink">
+            Call dibs
+          </span>
+        )}
+      </span>
+    </li>
   );
-  const [draft, setDraft] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+}
 
-  function addDraft() {
-    const text = draft.trim();
-    if (!text) return;
-    const { emoji, title: t } = splitEmoji(text);
-    setTasks((ts) => [...ts, { id: uid(), emoji, title: t }]);
-    setDraft("");
-  }
-
-  async function share() {
-    if (submitting || !title.trim()) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/lists", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          event_at: eventAt ? new Date(eventAt).toISOString() : null,
-          tasks: tasks.map((t) => ({ emoji: t.emoji, title: t.title })),
-        }),
-      });
-      if (!res.ok) {
-        setSubmitting(false);
-        return;
-      }
-      const { listId } = await res.json();
-      router.push(`/l/${listId}/share`);
-    } catch {
-      setSubmitting(false);
-    }
-  }
-
+export default function Home() {
   return (
     <main className="screen flex flex-col px-[22px] pt-16 pb-[30px]">
       <Washes />
 
-      {/* Eyebrow */}
       <div className="flex items-center gap-2.5">
         <Stamp />
-        <span className="font-display text-[14px] font-semibold text-text-60">
-          New event ✨
-        </span>
+        <span className="font-display text-[14px] font-semibold text-text-60">Dibs</span>
       </div>
 
-      {/* Title (editable) */}
-      <input
-        aria-label="Event name"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="mt-4 w-full bg-transparent font-display text-[32px] font-bold leading-[1.1] tracking-[-1px] text-text caret-[var(--lime)] outline-none"
-      />
+      <h1 className="mt-5 font-display text-[34px] font-extrabold leading-[1.05] tracking-[-1.2px]">
+        Call dibs on the
+        <br />
+        to-do list.
+      </h1>
+      <p className="mt-3 font-body text-[15px] text-text-50">
+        Shared lists for group plans — a birthday, a trip, a potluck. Drop the link in
+        any chat. Everyone claims what they&apos;ll do. No app, no login.
+      </p>
 
-      {/* Date — native picker, persisted as event_at; formatted preview shown */}
-      <label className="mt-1 flex items-center gap-2 font-body text-[14px] text-text-50">
-        <input
-          type="datetime-local"
-          aria-label="Event date and time"
-          value={eventAt}
-          onChange={(e) => setEventAt(e.target.value)}
-          className="bg-transparent text-text-50 outline-none [color-scheme:dark]"
-        />
-        {eventAt && (
-          <span className="text-text-40">· {formatEventAt(eventAt)}</span>
-        )}
-      </label>
-
-      {/* Section label */}
-      <div className="mb-3 mt-[30px] font-display text-[12px] font-semibold uppercase tracking-[1.5px] text-text-40">
-        Tasks
+      {/* Live-feel demo */}
+      <div className="mt-7 font-display text-[12px] font-semibold uppercase tracking-[1.5px] text-text-40">
+        Dev&apos;s Bday · demo
       </div>
-
-      {/* Task rows */}
-      <ul className="flex flex-col gap-[9px]">
-        {tasks.map((t) => (
-          <li
-            key={t.id}
-            className="flex items-center gap-3 rounded-[14px] border border-hairline bg-surface px-[14px] py-[13px]"
-          >
-            <span
-              aria-hidden
-              className="h-[18px] w-[18px] shrink-0 rounded-full"
-              style={{ border: "2px dashed rgba(245,243,239,0.22)" }}
-            />
-            <span className="font-body text-[16px] font-medium">
-              {t.emoji} {t.title}
-            </span>
-            <button
-              aria-label={`Remove ${t.title}`}
-              onClick={() => setTasks((ts) => ts.filter((x) => x.id !== t.id))}
-              className="ml-auto min-h-[44px] min-w-[44px] text-text-40"
-            >
-              ×
-            </button>
-          </li>
-        ))}
+      <ul className="mt-3 flex flex-col gap-[9px]">
+        <DemoRow emoji="🍰" title="Order the cake" state={{ kind: "done", who: "Maya", color: "#ff5da2" }} />
+        <DemoRow emoji="🎵" title="Make the playlist" state={{ kind: "dibs" }} />
+        <DemoRow emoji="🎈" title="Bring decorations" state={{ kind: "dibs" }} />
       </ul>
 
-      {/* Add-task row */}
-      <div
-        className="mt-[9px] flex items-center gap-3 rounded-[14px] px-[14px] py-[13px]"
-        style={{ border: "1px dashed rgba(255,255,255,0.12)" }}
+      <Link
+        href="/new"
+        className="mt-7 w-full rounded-[16px] bg-lime px-4 py-[17px] text-center font-display text-[18px] font-bold text-bg shadow-lime-cta"
       >
-        <span aria-hidden className="text-text-40">
-          +
-        </span>
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addDraft()}
-          placeholder="Add a task…"
-          aria-label="Add a task"
-          className="w-full bg-transparent font-body text-[16px] text-text caret-[var(--lime)] outline-none placeholder:text-text-40"
-        />
-      </div>
-
-      {/* CTA */}
-      <button
-        onClick={share}
-        disabled={submitting || !title.trim()}
-        className="mt-6 w-full rounded-[16px] bg-lime px-4 py-[17px] font-display text-[18px] font-bold text-bg shadow-lime-cta disabled:opacity-60"
-      >
-        {submitting ? "Creating…" : "Share with the group →"}
-      </button>
-
+        Create a list →
+      </Link>
       <p className="mt-3 text-center font-body text-[13px] text-text-40">
-        Drop it in any group chat — they don&apos;t even need the app ✨
+        Free · takes 20 seconds · works in any group chat ✨
       </p>
     </main>
   );
