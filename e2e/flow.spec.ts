@@ -25,9 +25,13 @@ test("create a list, share, then call dibs", async ({ page }) => {
   await page.getByRole("button", { name: /Open the list/ }).click();
   await expect(page).toHaveURL(/\/l\/[^/]+$/);
 
-  // first claim prompts for a name
-  page.once("dialog", (d) => d.accept("Tester"));
+  // first claim opens the identity prompt (name + phone)
   await page.getByRole("button", { name: /^Call dibs on/ }).first().click();
+  await page.getByLabel("Your name").fill("Tester");
+  await page.getByLabel("Your number").fill("555 010 7788");
+  await page.getByRole("button", { name: /Join the list/ }).click();
+
+  // owner chip ("You") shows
   await expect(page.getByText("You", { exact: false }).first()).toBeVisible();
 });
 
