@@ -15,11 +15,12 @@ const SeedTask = z.object({
 });
 
 const Body = z.object({
-  title: z.string().min(1).max(120),
+  title: z.string().trim().min(1).max(120),
   emoji: z.string().max(12).optional(),
   description: z.string().max(500).nullable().optional(),
-  invite_url: z.string().url().max(500).nullable().optional().or(z.literal("")),
-  event_at: z.string().datetime().nullable().optional(),
+  // Accept any string (incl. a bare domain); safeHttpUrl normalizes/validates.
+  invite_url: z.string().max(500).nullable().optional(),
+  event_at: z.string().datetime({ offset: true }).nullable().optional(),
   // Optional: when omitted, no host member is created — the host follows the
   // same list-first / name-on-first-claim flow as everyone (consistent identity,
   // avoids the "You" absolute-vs-relative name problem).

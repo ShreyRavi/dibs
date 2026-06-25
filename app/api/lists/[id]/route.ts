@@ -9,11 +9,11 @@ import { safeHttpUrl } from "@/lib/url";
 // Open via the link capability (same trust as claiming); a soft rate limit
 // blunts abuse. Empty strings clear nullable fields.
 const Body = z.object({
-  title: z.string().min(1).max(120).optional(),
+  title: z.string().trim().min(1).max(120).optional(),
   emoji: z.string().max(12).optional(),
   description: z.string().max(500).nullable().optional(),
-  invite_url: z.union([z.string().url().max(500), z.literal("")]).nullable().optional(),
-  event_at: z.string().datetime().nullable().optional(),
+  invite_url: z.string().max(500).nullable().optional(),
+  event_at: z.string().datetime({ offset: true }).nullable().optional(),
   completed: z.boolean().optional(),
 });
 
