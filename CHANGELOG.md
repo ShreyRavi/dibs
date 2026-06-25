@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.5.0.0 (2026-06-25)
+
+### Added
+- **Event fields** — emoji "logo" (curated picker), description, and an external
+  invite URL ("View the invite →"). New `0003`/`0004` columns.
+- **List settings** (`/l/[code]/settings`) — edit name, emoji, date, description,
+  invite link, mark (un)completed; import/export tasks as a comma list.
+- **Completed state** — "Wrap up the event" sets `completed`; a past or completed
+  event shows a recap callout linking to /complete (stays editable).
+- **Comma-separated tasks** — typing "cake, playlist, bar" adds several at once
+  (Set Up, List, and settings import).
+- **Branding** — favicon, the Dibs logo + wordmark on every list page, a footer
+  "© Dibs by Kansoboard {year} · {commit}", and "Dibs by Kansoboard" linking
+  kansoboard.com on the homepage.
+
+### Changed
+- **Complete screen** — redesigned, centered "EVENT COMPLETE" seal (uses the
+  event emoji); "Pulled off by the crew" now lists full names with each person's
+  finished tasks as sub-items.
+- Crew label reads "You + N other planners".
+- Adding an unclaimed task no longer requires a name (claiming still does).
+
+### Security
+- `invite_url` restricted to http(s) (server + render) — blocks `javascript:` XSS.
+
+### Data
+- Prod data reset to a clean slate (non-backward-compatible schema change).
+
+
 ## 0.4.0.0 (2026-06-24)
 
 ### Fixed

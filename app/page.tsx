@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Washes } from "@/components/Washes";
-import { Stamp } from "@/components/Stamp";
+import { DibsLogo } from "@/components/DibsLogo";
+import { Footer } from "@/components/Footer";
 
 // Landing — what Dibs is, a quick visual demo of the mechanic, and a way to
 // start a new group. Not a pre-filled event (that lives at /new).
@@ -60,10 +61,7 @@ export default function Home() {
     <main className="screen flex flex-col px-[22px] pt-16 pb-[30px]">
       <Washes />
 
-      <div className="flex items-center gap-2.5">
-        <Stamp />
-        <span className="font-display text-[14px] font-semibold text-text-60">Dibs</span>
-      </div>
+      <DibsLogo parent />
 
       <h1 className="mt-5 font-display text-[34px] font-extrabold leading-[1.05] tracking-[-1.2px]">
         Call dibs on the
@@ -94,6 +92,7 @@ export default function Home() {
       <p className="mt-3 text-center font-body text-[13px] text-text-40">
         Free · takes 20 seconds · works in any group chat ✨
       </p>
+      <Footer />
     </main>
   );
 }

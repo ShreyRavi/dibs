@@ -2,10 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useListChannel } from "@/lib/useListChannel";
 import { comparePosition } from "@/lib/position";
 import { formatEventAt } from "@/lib/format";
+import { splitTasks } from "@/lib/parseTask";
 import { Washes } from "@/components/Washes";
+import { DibsLogo } from "@/components/DibsLogo";
+import { Footer } from "@/components/Footer";
 import { ProgressRing } from "@/components/ProgressRing";
 import { AvatarStack } from "@/components/Avatar";
 import { TaskRow } from "@/components/TaskRow";
@@ -195,20 +199,31 @@ export default function ListClient({ initial }: { initial: State }) {
   );
 
   const addTask = useCallback(async () => {
-    const text = draft.trim();
-    if (!text) return;
-    const me = await ensureMember();
-    if (!me) return;
+    const titles = splitTasks(draft); // comma-separated → many at once
+    if (!titles.length) return;
     setDraft("");
     const op_id = newOpId();
     myOps.current.add(op_id);
     const res = await fetch(`/api/lists/${state.id}/tasks`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ emoji: "✨", title: text, op_id }),
+      body: JSON.stringify({ titles, op_id }),
     });
-    if (res.ok) applyTask((await res.json()).task);
-  }, [draft, ensureMember, state.id, applyTask]);
+    if (res.ok) {
+      const { tasks } = await res.json();
+      (tasks as Task[]).forEach(applyTask);
+    }
+  }, [draft, state.id, applyTask]);
+
+  // Wrap up: mark the event completed, then show the recap.
+  const wrapUp = useCallback(async () => {
+    await fetch(`/api/lists/${state.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ completed: true }),
+    }).catch(() => {});
+    router.push(`/l/${state.code}/complete`);
+  }, [state.id, state.code, router]);
 
   // Personal restore link → carry this identity to another device (no dup member).
   const copyMyLink = useCallback(async () => {
@@ -226,25 +241,70 @@ export default function ListClient({ initial }: { initial: State }) {
   const crewLabel =
     state.members.length <= 1
       ? "You"
-      : `You + ${state.members.length - 1} other${state.members.length > 2 ? "s" : ""}`;
+      : `You + ${state.members.length - 1} other planner${state.members.length > 2 ? "s" : ""}`;
+
+  // Past or explicitly wrapped → surface the recap up top (stays editable).
+  const isPast = state.event_at ? new Date(state.event_at).getTime() < Date.now() : false;
+  const showRecap = state.completed || isPast;
 
   return (
     <main className="screen flex flex-col px-5 pt-14 pb-[30px]">
       <Washes pink="20% 18%" lime="80% 12%" />
 
-      {/* Breadcrumb */}
-      <div className="font-body text-[12px] text-text-40">← shared list</div>
+      {/* Header: brand + settings */}
+      <div className="flex items-center justify-between">
+        <DibsLogo />
+        <Link
+          href={`/l/${state.code}/settings`}
+          aria-label="List settings"
+          className="font-body text-[13px] text-text-40 hover:text-text-60"
+        >
+          ⚙ Settings
+        </Link>
+      </div>
+
+      {/* Recap callout when wrapped or past */}
+      {showRecap && (
+        <Link
+          href={`/l/${state.code}/complete`}
+          className="mt-4 flex items-center justify-between gap-3 rounded-[14px] px-4 py-3"
+          style={{
+            background: "rgba(200,255,77,0.12)",
+            border: "1px solid rgba(200,255,77,0.4)",
+            boxShadow: "0 0 30px rgba(200,255,77,0.10)",
+          }}
+        >
+          <span className="font-body text-[14px] font-bold text-lime">
+            🎉 {state.completed ? "This event wrapped" : "This event has passed"} — see the recap
+          </span>
+          <span className="font-display text-[14px] font-bold text-lime">→</span>
+        </Link>
+      )}
 
       {/* Title + progress ring */}
-      <div className="mt-2 flex items-start justify-between gap-3">
+      <div className="mt-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-display text-[28px] font-bold leading-[1.1] tracking-[-0.8px]">
+            <span aria-hidden className="mr-1.5">{state.emoji}</span>
             {state.title}
           </h1>
           {formatEventAt(state.event_at) && (
             <p className="mt-1 font-body text-[13px] text-text-50">
               {formatEventAt(state.event_at)}
             </p>
+          )}
+          {state.description && (
+            <p className="mt-2 font-body text-[14px] text-text-60">{state.description}</p>
+          )}
+          {state.invite_url && /^https?:\/\//i.test(state.invite_url) && (
+            <a
+              href={state.invite_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1 font-display text-[13px] font-bold text-lime"
+            >
+              View the invite →
+            </a>
           )}
         </div>
         <ProgressRing done={doneCount} total={total} />
@@ -343,15 +403,15 @@ export default function ListClient({ initial }: { initial: State }) {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addTask()}
-          placeholder="Add a task for the group…"
-          aria-label="Add a task"
+          placeholder="Add tasks — separate with commas for several…"
+          aria-label="Add tasks"
           className="w-full bg-transparent font-body text-[16px] text-text caret-[var(--lime)] outline-none placeholder:text-text-40"
         />
       </div>
 
       {/* Complete / wrap-up */}
       <button
-        onClick={() => router.push(`/l/${state.code}/complete`)}
+        onClick={wrapUp}
         className={
           allDone
             ? "mt-6 w-full rounded-[16px] bg-lime px-4 py-4 font-display text-[17px] font-bold text-bg shadow-lime-cta"
@@ -374,6 +434,8 @@ export default function ListClient({ initial }: { initial: State }) {
       <p className="mt-2 text-center font-body text-[12px] text-text-40">
         Synced with everyone in {state.title}
       </p>
+
+      <Footer />
 
       {promptOpen && (
         <NamePrompt

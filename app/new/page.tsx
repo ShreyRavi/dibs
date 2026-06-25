@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Washes } from "@/components/Washes";
-import { Stamp } from "@/components/Stamp";
+import { DibsLogo } from "@/components/DibsLogo";
 import { DateField } from "@/components/DateField";
+import { EmojiPicker } from "@/components/EmojiPicker";
+import { DEFAULT_EMOJI } from "@/lib/emojis";
+import { splitLeadingEmoji, splitTasks } from "@/lib/parseTask";
 
 interface DraftTask {
   id: string;
@@ -15,7 +18,6 @@ interface DraftTask {
 const uid = () =>
   globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 
-// Default the event to the next Saturday 8 PM (handy starting point).
 function defaultEventAt(): string {
   const d = new Date();
   d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7 || 7));
@@ -24,29 +26,24 @@ function defaultEventAt(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// Split a leading emoji off a typed task ("🍕 pizza" → {emoji,title}).
-function splitEmoji(input: string): { emoji: string; title: string } {
-  const m = input
-    .trim()
-    .match(/^(\p{Extended_Pictographic}(?:‍\p{Extended_Pictographic})*)\s*(.*)$/u);
-  if (m && m[2]) return { emoji: m[1], title: m[2] };
-  return { emoji: "✨", title: input.trim() };
-}
-
-// Set Up — create a NEW group. Starts blank (no pre-filled example event).
+// Set Up — create a NEW group. Starts blank.
 export default function NewGroup() {
   const router = useRouter();
   const [title, setTitle] = useState("");
+  const [emoji, setEmoji] = useState<string>(DEFAULT_EMOJI);
   const [eventAt, setEventAt] = useState(defaultEventAt());
+  const [description, setDescription] = useState("");
+  const [inviteUrl, setInviteUrl] = useState("");
   const [tasks, setTasks] = useState<DraftTask[]>([]);
   const [draft, setDraft] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Comma-separated: "cake, 🎵 playlist, bar" → three tasks at once.
   function addDraft() {
-    const text = draft.trim();
-    if (!text) return;
-    const { emoji, title: t } = splitEmoji(text);
-    setTasks((ts) => [...ts, { id: uid(), emoji, title: t }]);
+    const phrases = splitTasks(draft);
+    if (!phrases.length) return;
+    const next = phrases.map((p) => ({ id: uid(), ...splitLeadingEmoji(p) }));
+    setTasks((ts) => [...ts, ...next]);
     setDraft("");
   }
 
@@ -59,6 +56,9 @@ export default function NewGroup() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
+          emoji,
+          description: description.trim() || null,
+          invite_url: inviteUrl.trim() || null,
           event_at: eventAt ? new Date(eventAt).toISOString() : null,
           tasks: tasks.map((t) => ({ emoji: t.emoji, title: t.title })),
         }),
@@ -74,37 +74,57 @@ export default function NewGroup() {
     }
   }
 
-  return (
-    <main className="screen flex flex-col px-[22px] pt-16 pb-[30px]">
-      <Washes />
+  const fieldCls =
+    "w-full rounded-[12px] border border-hairline bg-surface px-3.5 py-3 font-body text-[16px] text-text caret-[var(--lime)] outline-none placeholder:text-text-40";
 
-      {/* Eyebrow */}
-      <div className="flex items-center gap-2.5">
-        <Stamp />
-        <span className="font-display text-[14px] font-semibold text-text-60">
-          New event ✨
-        </span>
+  return (
+    <main className="screen flex flex-col px-[22px] pt-14 pb-[30px]">
+      <Washes />
+      <DibsLogo />
+
+      {/* Title with the chosen emoji logo inline */}
+      <div className="mt-5 flex items-start gap-2">
+        <span aria-hidden className="mt-0.5 text-[30px] leading-none">{emoji}</span>
+        <input
+          aria-label="Event name"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Name your event"
+          autoFocus
+          className="w-full bg-transparent font-display text-[30px] font-bold leading-[1.1] tracking-[-1px] text-text caret-[var(--lime)] outline-none placeholder:text-text-40"
+        />
       </div>
 
-      {/* Title (blank with placeholder) */}
-      <input
-        aria-label="Event name"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Name your event"
-        autoFocus
-        className="mt-4 w-full bg-transparent font-display text-[32px] font-bold leading-[1.1] tracking-[-1px] text-text caret-[var(--lime)] outline-none placeholder:text-text-40"
-      />
-
-      {/* Date — single clean control (opens the OS picker) */}
       <DateField value={eventAt} onChange={setEventAt} />
 
-      {/* Section label */}
-      <div className="mb-3 mt-[30px] font-display text-[12px] font-semibold uppercase tracking-[1.5px] text-text-40">
+      {/* Emoji logo picker */}
+      <div className="mb-2 mt-5 font-display text-[12px] font-semibold uppercase tracking-[1.5px] text-text-40">
+        Pick an emoji
+      </div>
+      <EmojiPicker value={emoji} onChange={setEmoji} />
+
+      {/* Optional details */}
+      <textarea
+        aria-label="Description"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Add a description (optional)"
+        rows={2}
+        className={`mt-4 resize-none ${fieldCls}`}
+      />
+      <input
+        aria-label="Invite link"
+        value={inviteUrl}
+        onChange={(e) => setInviteUrl(e.target.value)}
+        placeholder="Invite link — Partiful, Evite… (optional)"
+        inputMode="url"
+        className={`mt-2.5 ${fieldCls}`}
+      />
+
+      {/* Tasks */}
+      <div className="mb-3 mt-7 font-display text-[12px] font-semibold uppercase tracking-[1.5px] text-text-40">
         Tasks
       </div>
-
-      {/* Task rows */}
       <ul className="flex flex-col gap-[9px]">
         {tasks.map((t) => (
           <li
@@ -130,32 +150,28 @@ export default function NewGroup() {
         ))}
       </ul>
 
-      {/* Add-task row */}
       <div
         className="mt-[9px] flex items-center gap-3 rounded-[14px] px-[14px] py-[13px]"
         style={{ border: "1px dashed rgba(255,255,255,0.12)" }}
       >
-        <span aria-hidden className="text-text-40">
-          +
-        </span>
+        <span aria-hidden className="text-text-40">+</span>
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addDraft()}
-          placeholder="Add a task people can claim…"
-          aria-label="Add a task"
+          placeholder="Add tasks — separate with commas for several…"
+          aria-label="Add tasks"
           className="w-full bg-transparent font-body text-[16px] text-text caret-[var(--lime)] outline-none placeholder:text-text-40"
         />
       </div>
 
       {tasks.length === 0 && (
         <p className="mt-3 font-body text-[13px] text-text-40">
-          Add a few things — the cake, the playlist, the bar. People call dibs on what
-          they&apos;ll do.
+          e.g. <span className="text-text-50">cake, playlist, bar, decorations</span> —
+          People call dibs on what they&apos;ll do.
         </p>
       )}
 
-      {/* CTA */}
       <button
         onClick={create}
         disabled={submitting || !title.trim()}

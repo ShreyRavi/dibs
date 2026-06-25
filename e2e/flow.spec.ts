@@ -12,8 +12,8 @@ test("create a list, share, then call dibs", async ({ page }) => {
   // Set Up lives at /new and starts blank
   await page.goto("/new");
   await page.getByLabel("Event name").fill("Trip planning 🏔️");
-  await page.getByLabel("Add a task").fill("🚗 Book the car");
-  await page.getByLabel("Add a task").press("Enter");
+  await page.getByLabel("Add tasks").fill("🚗 Book the car");
+  await page.getByLabel("Add tasks").press("Enter");
 
   // Create → lands on the share surface with a SHORT code in the URL
   await page.getByRole("button", { name: /Create & share/ }).click();

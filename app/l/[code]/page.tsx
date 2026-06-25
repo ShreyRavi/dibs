@@ -43,7 +43,7 @@ export default async function ListPage({
 
   const { data: list } = await db
     .from("dibs_lists")
-    .select("id, code, title, event_at, shared")
+    .select("id, code, title, emoji, description, invite_url, event_at, shared, completed")
     .eq("code", code)
     .single();
   if (!list) notFound();
@@ -64,8 +64,12 @@ export default async function ListPage({
     id: list.id,
     code: list.code,
     title: list.title,
+    emoji: list.emoji,
+    description: list.description,
+    invite_url: list.invite_url,
     event_at: list.event_at,
     shared: list.shared,
+    completed: list.completed,
     members: members ?? [],
     tasks: tasks ?? [],
     you: me?.id ?? null,

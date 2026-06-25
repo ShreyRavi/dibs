@@ -5,28 +5,36 @@ import { useRouter } from "next/navigation";
 import { Washes } from "@/components/Washes";
 import { Seal } from "@/components/Seal";
 import { StatChip } from "@/components/StatChip";
-import { AvatarStack } from "@/components/Avatar";
+import { Avatar } from "@/components/Avatar";
 import { Confetti } from "@/components/Confetti";
+import { Footer } from "@/components/Footer";
 import type { Member } from "@/lib/types";
 
-// Complete payoff screen. Fires confetti once on entry (handoff). Reduced-motion
-// users get the static seal without confetti (Confetti self-suppresses).
+interface CrewEntry {
+  member: Member;
+  done: { emoji: string; title: string }[];
+}
+
+// Complete payoff screen. Fires confetti once on entry. Shows each person and
+// the tasks they finished (who did what). Reduced-motion → no confetti.
 export default function CompleteClient({
   code,
+  emoji,
   title,
   sub,
   tasksDone,
   people,
   droppedBalls,
-  members,
+  crew,
 }: {
   code: string;
+  emoji: string;
   title: string;
   sub: string;
   tasksDone: number;
   people: number;
   droppedBalls: number;
-  members: Member[];
+  crew: CrewEntry[];
 }) {
   const router = useRouter();
   const [confettiKey, setConfettiKey] = useState(0);
@@ -36,11 +44,11 @@ export default function CompleteClient({
   }, []);
 
   return (
-    <main className="screen flex flex-col items-center px-[26px] pt-[74px] pb-10 text-center">
+    <main className="screen flex flex-col items-center px-[26px] pt-[64px] pb-10 text-center">
       <Washes pink="80% 90%" lime="50% 8%" />
       <Confetti fireKey={confettiKey} />
 
-      <Seal />
+      <Seal emoji={emoji} />
 
       <h1 className="mt-7 font-display text-[30px] font-extrabold tracking-[-0.5px]">
         {title}
@@ -53,10 +61,37 @@ export default function CompleteClient({
         <StatChip value={droppedBalls} label="dropped balls" color="var(--periwinkle)" rotate={-2} />
       </div>
 
-      {members.length > 0 && (
-        <div className="mt-7 flex flex-col items-center gap-2">
-          <span className="font-body text-[13px] text-text-50">Pulled off by the crew</span>
-          <AvatarStack members={members} size={32} />
+      {/* Pulled off by the crew — full names + what each person finished */}
+      {crew.length > 0 && (
+        <div className="mt-8 w-full">
+          <p className="mb-3 font-body text-[13px] text-text-50">Pulled off by the crew</p>
+          <ul className="flex flex-col gap-2.5 text-left">
+            {crew.map(({ member, done }) => (
+              <li
+                key={member.id}
+                className="rounded-[14px] border border-hairline bg-surface px-4 py-3"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Avatar member={member} size={28} />
+                  <span className="font-display text-[15px] font-bold text-text">
+                    {member.name}
+                  </span>
+                  <span className="ml-auto font-body text-[12px] text-text-40">
+                    {done.length} done
+                  </span>
+                </div>
+                {done.length > 0 && (
+                  <ul className="mt-2 flex flex-col gap-1 pl-[38px]">
+                    {done.map((t, i) => (
+                      <li key={i} className="font-body text-[14px] text-text-60">
+                        {t.emoji} {t.title}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -75,6 +110,8 @@ export default function CompleteClient({
           Back to the list
         </button>
       </div>
+
+      <Footer />
     </main>
   );
 }

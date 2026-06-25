@@ -17,7 +17,7 @@ export async function GET(
 
   const { data: list } = await db
     .from("dibs_lists")
-    .select("id, code, title, event_at, shared")
+    .select("id, code, title, emoji, description, invite_url, event_at, shared, completed")
     .eq("id", listId)
     .single();
   if (!list) return NextResponse.json({ error: "list not found" }, { status: 404 });
@@ -38,8 +38,12 @@ export async function GET(
     id: list.id,
     code: list.code,
     title: list.title,
+    emoji: list.emoji,
+    description: list.description,
+    invite_url: list.invite_url,
     event_at: list.event_at,
     shared: list.shared,
+    completed: list.completed,
     members: members ?? [],
     tasks: tasks ?? [],
     you: you?.id ?? null,

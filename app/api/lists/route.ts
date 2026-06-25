@@ -6,6 +6,8 @@ import { colorForIndex } from "@/lib/colors";
 import { positionAfter } from "@/lib/position";
 import { rateLimit, clientKey } from "@/lib/rateLimit";
 import { generateCode } from "@/lib/code";
+import { cleanEmoji } from "@/lib/emojis";
+import { safeHttpUrl } from "@/lib/url";
 
 const SeedTask = z.object({
   emoji: z.string().min(1).max(8).default("✨"),
@@ -14,6 +16,9 @@ const SeedTask = z.object({
 
 const Body = z.object({
   title: z.string().min(1).max(120),
+  emoji: z.string().max(12).optional(),
+  description: z.string().max(500).nullable().optional(),
+  invite_url: z.string().url().max(500).nullable().optional().or(z.literal("")),
   event_at: z.string().datetime().nullable().optional(),
   // Optional: when omitted, no host member is created — the host follows the
   // same list-first / name-on-first-claim flow as everyone (consistent identity,
@@ -38,7 +43,8 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { title, event_at, hostName, tasks } = parsed.data;
+  const { title, emoji, description, invite_url, event_at, hostName, tasks } =
+    parsed.data;
   const db = supabaseAdmin();
 
   // Insert with a short public code; retry a few times on the rare unique clash.
@@ -48,7 +54,14 @@ export async function POST(req: NextRequest) {
     const candidate = generateCode();
     const { data: list, error: listErr } = await db
       .from("dibs_lists")
-      .insert({ title, event_at: event_at ?? null, code: candidate })
+      .insert({
+        title,
+        emoji: cleanEmoji(emoji),
+        description: description || null,
+        invite_url: safeHttpUrl(invite_url),
+        event_at: event_at ?? null,
+        code: candidate,
+      })
       .select("id, code")
       .single();
     if (list) {

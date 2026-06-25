@@ -20,8 +20,12 @@ export interface ListState {
   id: string;
   code: string;
   title: string;
+  emoji: string;
+  description: string | null;
+  invite_url: string | null;
   event_at: string | null;
   shared: boolean;
+  completed: boolean;
   members: Member[];
   tasks: Task[];
 }
