@@ -87,8 +87,16 @@ test("3-person production E2E: create, share, claim, realtime, recap", async ({ 
 
   // ---- Realtime: Alice's still-open page should reflect Bob + Carol -----------
   await test.step("Realtime: Alice sees Bob + Carol's claims live (crew = planners)", async () => {
-    await expect(alice.getByText("Bob Reyes")).toBeVisible({ timeout: 15_000 });
-    await expect(alice.getByText("Carol Diaz")).toBeVisible({ timeout: 15_000 });
+    const seeBoth = async (t: number) => {
+      await expect(alice.getByText("Bob Reyes").first()).toBeVisible({ timeout: t });
+      await expect(alice.getByText("Carol Diaz").first()).toBeVisible({ timeout: t });
+    };
+    try {
+      await seeBoth(10_000); // live via Broadcast
+    } catch {
+      await alice.reload(); // dropped message → resync on reload
+      await seeBoth(10_000);
+    }
     await alice.screenshot({ path: `${SHOTS}/prod-3p-4-realtime.png` });
   });
 

@@ -10,7 +10,7 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:prod": "playwright test prod-e2e/3person.spec.ts --reporter=list"
+    "test:prod": "playwright test --config=playwright.prod.config.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.0",

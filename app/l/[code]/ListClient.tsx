@@ -100,6 +100,21 @@ export default function ListClient({ initial }: { initial: State }) {
     if (res.ok) setState(await res.json());
   }, [state.id]);
 
+  // Self-heal any dropped Broadcast message: resync on tab refocus and on a
+  // gentle interval. Broadcast is best-effort, so this guarantees eventual
+  // consistency for a multi-person live list without hammering the server.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") resync();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    const iv = setInterval(resync, 20_000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      clearInterval(iv);
+    };
+  }, [resync]);
+
   useListChannel(
     state.id,
     (e: ListEvent) => {
