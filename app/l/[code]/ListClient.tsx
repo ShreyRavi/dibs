@@ -11,7 +11,7 @@ import { Washes } from "@/components/Washes";
 import { DibsLogo } from "@/components/DibsLogo";
 import { Footer } from "@/components/Footer";
 import { ProgressRing } from "@/components/ProgressRing";
-import { AvatarStack } from "@/components/Avatar";
+import { Crew } from "@/components/Crew";
 import { TaskRow } from "@/components/TaskRow";
 import { Toast } from "@/components/Toast";
 import { Confetti } from "@/components/Confetti";
@@ -238,11 +238,6 @@ export default function ListClient({ initial }: { initial: State }) {
     }
   }, [state.id, fireToast]);
 
-  const crewLabel =
-    state.members.length <= 1
-      ? "You"
-      : `You + ${state.members.length - 1} other planner${state.members.length > 2 ? "s" : ""}`;
-
   // Past or explicitly wrapped → surface the recap up top (stays editable).
   const isPast = state.event_at ? new Date(state.event_at).getTime() < Date.now() : false;
   const showRecap = state.completed || isPast;
@@ -310,13 +305,14 @@ export default function ListClient({ initial }: { initial: State }) {
         <ProgressRing done={doneCount} total={total} />
       </div>
 
-      {/* Crew */}
-      <div className="mt-4 flex items-center gap-2.5">
-        {state.members.length > 0 && <AvatarStack members={state.members} />}
-        <span className="font-body text-[13px] text-text-50">{crewLabel}</span>
+      {/* Crew — named chips */}
+      <div className="mt-4 flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <Crew members={state.members} you={state.you} />
+        </div>
         {!connected && (
           <span
-            className="ml-auto flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 font-body text-[12px] text-text-50"
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 font-body text-[12px] text-text-50"
             aria-live="polite"
           >
             <span
