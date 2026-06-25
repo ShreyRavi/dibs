@@ -52,7 +52,7 @@ export function DibsCard({
 
       {needOwner > 0 && (
         <p className="mt-2 font-body text-[13px] font-semibold text-pink">
-          ⚡ {needOwner} task{needOwner > 1 ? "s" : ""} still need an owner
+          ⚡ {needOwner} task{needOwner > 1 ? "s" : ""} still need{needOwner === 1 ? "s" : ""} an owner
         </p>
       )}
 

@@ -349,7 +349,7 @@ export default function ListClient({ initial }: { initial: State }) {
           }}
         >
           <span className="font-body text-[14px] font-semibold text-pink">
-            ⚡ {needOwner} task{needOwner > 1 ? "s" : ""} need an owner
+            ⚡ {needOwner} task{needOwner > 1 ? "s" : ""} need{needOwner === 1 ? "s" : ""} an owner
           </span>
           <button
             onClick={() => fireToast("Nudged the group 👋")}
