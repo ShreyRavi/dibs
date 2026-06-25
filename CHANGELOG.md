@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0.0 (2026-06-24)
+
+### Fixed
+- **Identity confusion across devices** — a member is now keyed by **phone number**
+  (Partiful-style, but no OTP). The same number joins as the **same member** on any
+  device, so one person no longer forks into duplicates (the in-app-browser / forwarded-
+  link / second-device case). Phone is hashed (`sha256`), never stored raw; the device
+  cookie stays the fast path so a known device never sees the prompt.
+
+### Added
+- **Name + number prompt** (modal) on first claim, replacing the single-field browser
+  prompt. `0003` migration: `dibs_members.phone_hash` + partial unique `(list_id, phone_hash)`.
+
+
 ## 0.3.0.0 (2026-06-23)
 
 ### Added

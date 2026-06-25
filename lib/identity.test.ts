@@ -1,5 +1,40 @@
 import { describe, it, expect } from "vitest";
-import { makeToken, verifyToken, sign, cookieName } from "./identity";
+import {
+  makeToken,
+  verifyToken,
+  sign,
+  cookieName,
+  normalizePhone,
+  phoneHash,
+} from "./identity";
+
+describe("phone identity", () => {
+  it("normalizes formats + US country code to the same digits", () => {
+    expect(normalizePhone("+1 (555) 123-4567")).toBe("5551234567");
+    expect(normalizePhone("15551234567")).toBe("5551234567");
+    expect(normalizePhone("555.123.4567")).toBe("5551234567");
+  });
+
+  it("rejects too-short numbers", () => {
+    expect(normalizePhone("12345")).toBeNull();
+    expect(normalizePhone("")).toBeNull();
+    expect(phoneHash("12345")).toBeNull();
+  });
+
+  it("same number (any format) → same hash; different → different", () => {
+    const a = phoneHash("(555) 123-4567");
+    const b = phoneHash("+1 555 123 4567");
+    const c = phoneHash("555 999 0000");
+    expect(a).toBe(b);
+    expect(a).not.toBe(c);
+  });
+
+  it("does not store the raw number (hash is opaque hex)", () => {
+    const h = phoneHash("5551234567")!;
+    expect(h).toMatch(/^[0-9a-f]{64}$/);
+    expect(h).not.toContain("555");
+  });
+});
 
 describe("identity", () => {
   it("round-trips a valid token for the same list", () => {

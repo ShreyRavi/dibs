@@ -11,6 +11,7 @@ import { AvatarStack } from "@/components/Avatar";
 import { TaskRow } from "@/components/TaskRow";
 import { Toast } from "@/components/Toast";
 import { Confetti } from "@/components/Confetti";
+import { NamePrompt } from "@/components/NamePrompt";
 import type { ListState, Task, Member, ListEvent } from "@/lib/types";
 
 const newOpId = () =>
@@ -26,8 +27,29 @@ export default function ListClient({ initial }: { initial: State }) {
   const [poppedTask, setPoppedTask] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [connected, setConnected] = useState(true);
+  const [promptOpen, setPromptOpen] = useState(false);
   const myOps = useRef<Set<string>>(new Set());
   const joinInFlight = useRef<Promise<string | null> | null>(null);
+  const promptResolver = useRef<
+    ((v: { name: string; phone: string } | null) => void) | null
+  >(null);
+
+  const askIdentity = useCallback(
+    () =>
+      new Promise<{ name: string; phone: string } | null>((resolve) => {
+        promptResolver.current = resolve;
+        setPromptOpen(true);
+      }),
+    [],
+  );
+  const resolvePrompt = useCallback(
+    (v: { name: string; phone: string } | null) => {
+      setPromptOpen(false);
+      promptResolver.current?.(v);
+      promptResolver.current = null;
+    },
+    [],
+  );
 
   const memberById = useMemo(() => {
     const m = new Map<string, Member>();
@@ -98,13 +120,13 @@ export default function ListClient({ initial }: { initial: State }) {
   const ensureMember = useCallback(async (): Promise<string | null> => {
     if (state.you) return state.you;
     if (joinInFlight.current) return joinInFlight.current;
-    const name = window.prompt("What's your name?")?.trim();
-    if (!name) return null;
     joinInFlight.current = (async () => {
+      const id = await askIdentity();
+      if (!id) return null;
       const res = await fetch(`/api/lists/${state.id}/join`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, op_id: newOpId() }),
+        body: JSON.stringify({ name: id.name, phone: id.phone, op_id: newOpId() }),
       });
       if (!res.ok) return null;
       const { member } = await res.json();
@@ -122,7 +144,7 @@ export default function ListClient({ initial }: { initial: State }) {
     } finally {
       joinInFlight.current = null;
     }
-  }, [state.you, state.id]);
+  }, [state.you, state.id, askIdentity]);
 
   const callDibs = useCallback(
     async (taskId: string) => {
@@ -353,6 +375,12 @@ export default function ListClient({ initial }: { initial: State }) {
         Synced with everyone in {state.title}
       </p>
 
+      {promptOpen && (
+        <NamePrompt
+          onSubmit={(v) => resolvePrompt(v)}
+          onCancel={() => resolvePrompt(null)}
+        />
+      )}
       {toast && <Toast message={toast} onDone={() => setToast("")} />}
       <Confetti fireKey={confettiKey} />
     </main>
