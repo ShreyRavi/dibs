@@ -8,6 +8,16 @@ export default defineConfig({
   fullyParallel: false,
   retries: 0,
   reporter: [["list"]],
-  use: { trace: "off", viewport: { width: 390, height: 820 } },
+  use: {
+    trace: "off",
+    viewport: { width: 390, height: 820 },
+    // This runner's resolver still NXDOMAINs the fresh .events domain; map it to
+    // Vercel's IP so Chromium hits the real site (SNI/cert stay dibs.events).
+    launchOptions: {
+      args: [
+        "--host-resolver-rules=MAP dibs.events 216.198.79.1,MAP www.dibs.events 216.198.79.1",
+      ],
+    },
+  },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });
