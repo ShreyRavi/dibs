@@ -240,6 +240,22 @@ export default function ListClient({ initial }: { initial: State }) {
     router.push(`/l/${state.code}/complete`);
   }, [state.id, state.code, router]);
 
+  // Build a ready-to-paste reminder for the group chat: the open tasks + the
+  // link. No SMS/push channel exists, so the host pastes it where the crew is.
+  const copyNudge = useCallback(async () => {
+    const open = state.tasks.filter((t) => !t.owner_member_id);
+    if (open.length === 0) return;
+    const url = `${window.location.origin}/l/${state.code}`;
+    const lines = open.map((t) => `• ${t.emoji} ${t.title}`).join("\n");
+    const msg = `👋 ${open.length} thing${open.length > 1 ? "s" : ""} still need someone for ${state.title}:\n${lines}\n\nCall dibs 👉 ${url}`;
+    try {
+      await navigator.clipboard.writeText(msg);
+      fireToast("Nudge copied — paste it in the group chat 💬");
+    } catch {
+      fireToast(msg);
+    }
+  }, [state.tasks, state.code, state.title, fireToast]);
+
   // Personal restore link → carry this identity to another device (no dup member).
   const copyMyLink = useCallback(async () => {
     const res = await fetch(`/api/lists/${state.id}/mylink`);
@@ -363,11 +379,11 @@ export default function ListClient({ initial }: { initial: State }) {
             ⚡ {needOwner} task{needOwner > 1 ? "s" : ""} need{needOwner === 1 ? "s" : ""} an owner
           </span>
           <button
-            onClick={() => fireToast("Nudged the group 👋")}
-            className="ml-auto min-h-9 rounded-full px-3 font-display text-[13px] font-semibold text-pink"
+            onClick={copyNudge}
+            className="ml-auto min-h-9 shrink-0 rounded-full px-3 font-display text-[13px] font-semibold text-pink"
             style={{ border: "1px solid rgba(255,93,162,0.5)" }}
           >
-            Nudge 👋
+            Nudge text 👋
           </button>
         </div>
       ) : null}
