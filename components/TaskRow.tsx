@@ -15,6 +15,7 @@ export function TaskRow({
   popOwner,
   onCallDibs,
   onToggle,
+  onEditTitle,
 }: {
   task: Task;
   owner: Member | null;
@@ -22,6 +23,7 @@ export function TaskRow({
   popOwner: boolean;
   onCallDibs: () => void;
   onToggle: () => void;
+  onEditTitle?: () => void;
 }) {
   return (
     <li className="flex items-center gap-[13px] rounded-[15px] border border-hairline bg-surface px-[14px] py-[10px]">
@@ -53,12 +55,14 @@ export function TaskRow({
         />
       )}
 
-      {/* Title */}
-      <span
-        className={`font-body text-[16px] ${task.done ? "text-text-40 line-through" : ""}`}
+      {/* Title — tap to edit/delete (handler is member-gated by the caller) */}
+      <button
+        onClick={onEditTitle}
+        aria-label={`Edit "${task.title}"`}
+        className={`-my-1 min-w-0 flex-1 truncate py-1 text-left font-body text-[16px] ${task.done ? "text-text-40 line-through" : ""}`}
       >
         {task.emoji} {task.title}
-      </span>
+      </button>
 
       {/* Right control */}
       <span className="ml-auto shrink-0">

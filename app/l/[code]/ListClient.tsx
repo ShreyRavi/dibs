@@ -16,6 +16,7 @@ import { TaskRow } from "@/components/TaskRow";
 import { Toast } from "@/components/Toast";
 import { Confetti } from "@/components/Confetti";
 import { NamePrompt } from "@/components/NamePrompt";
+import { TaskEditModal } from "@/components/TaskEditModal";
 import type { ListState, Task, Member, ListEvent } from "@/lib/types";
 
 const newOpId = () =>
@@ -32,6 +33,7 @@ export default function ListClient({ initial }: { initial: State }) {
   const [draft, setDraft] = useState("");
   const [connected, setConnected] = useState(true);
   const [promptOpen, setPromptOpen] = useState(false);
+  const [editing, setEditing] = useState<Task | null>(null);
   const myOps = useRef<Set<string>>(new Set());
   const joinInFlight = useRef<Promise<string | null> | null>(null);
   const promptResolver = useRef<
@@ -212,6 +214,60 @@ export default function ListClient({ initial }: { initial: State }) {
     },
     [applyTask],
   );
+
+  // Tap a task's text → edit/delete. Gated to recognized members (joins first
+  // if needed); the done circle keeps its own toggle behavior, untouched.
+  const openEditor = useCallback(
+    async (task: Task) => {
+      const me = await ensureMember();
+      if (!me) return;
+      setEditing(task);
+    },
+    [ensureMember],
+  );
+
+  const editTask = useCallback(
+    async (v: { emoji: string; title: string }) => {
+      if (!editing) return;
+      const task = editing;
+      setEditing(null);
+      const op_id = newOpId();
+      myOps.current.add(op_id);
+      setState((s) => ({
+        ...s,
+        tasks: s.tasks.map((t) => (t.id === task.id ? { ...t, ...v } : t)), // optimistic
+      }));
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "edit", title: v.title, emoji: v.emoji, op_id }),
+      });
+      if (res.ok) applyTask((await res.json()).task as Task);
+      else {
+        await resync();
+        fireToast("couldn't save that 😕");
+      }
+    },
+    [editing, applyTask, resync, fireToast],
+  );
+
+  const deleteTask = useCallback(async () => {
+    if (!editing) return;
+    const task = editing;
+    setEditing(null);
+    const op_id = newOpId();
+    myOps.current.add(op_id);
+    setState((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== task.id) })); // optimistic
+    const res = await fetch(`/api/tasks/${task.id}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "delete", op_id }),
+    });
+    if (!res.ok) {
+      await resync();
+      fireToast("couldn't delete that 😕");
+    } else fireToast("Task removed 🗑️");
+  }, [editing, resync, fireToast]);
 
   const addTask = useCallback(async () => {
     const titles = splitTasks(draft); // comma-separated → many at once
@@ -409,6 +465,7 @@ export default function ListClient({ initial }: { initial: State }) {
               popOwner={poppedTask === t.id}
               onCallDibs={() => callDibs(t.id)}
               onToggle={() => toggleDone(t)}
+              onEditTitle={() => openEditor(t)}
             />
           );
         })}
@@ -468,6 +525,14 @@ export default function ListClient({ initial }: { initial: State }) {
         <NamePrompt
           onSubmit={(v) => resolvePrompt(v)}
           onCancel={() => resolvePrompt(null)}
+        />
+      )}
+      {editing && (
+        <TaskEditModal
+          task={editing}
+          onSave={editTask}
+          onDelete={deleteTask}
+          onClose={() => setEditing(null)}
         />
       )}
       {toast && <Toast message={toast} onDone={() => setToast("")} />}

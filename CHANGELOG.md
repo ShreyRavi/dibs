@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0.0 (2026-06-25)
+
+### Added
+- **Tap a task's text to edit or delete it** — opens a modal (Update / Delete,
+  two-step delete confirm). Member-gated: prompts name+phone first if needed.
+  The done circle keeps its own toggle behavior. New `edit` task action.
+
+
 ## 0.5.0.0 (2026-06-25)
 
 ### Added

@@ -7,8 +7,10 @@ const TASK_COLS =
   "id, emoji, title, owner_member_id, done, position, updated_at";
 
 const Body = z.object({
-  action: z.enum(["claim", "unclaim", "toggle", "delete"]),
+  action: z.enum(["claim", "unclaim", "toggle", "delete", "edit"]),
   done: z.boolean().optional(), // for toggle
+  title: z.string().trim().min(1).max(200).optional(), // for edit
+  emoji: z.string().min(1).max(8).optional(), // for edit
   op_id: z.string().min(1).max(64),
 });
 
@@ -83,6 +85,26 @@ export async function POST(
       .single();
     if (error || !data) {
       return NextResponse.json({ error: "toggle failed" }, { status: 500 });
+    }
+    await broadcast(listId, { kind: "task.upserted", op_id: parsed.data.op_id, task: data });
+    return NextResponse.json({ task: data });
+  }
+
+  if (action === "edit") {
+    const patch: Record<string, unknown> = {};
+    if (parsed.data.title !== undefined) patch.title = parsed.data.title;
+    if (parsed.data.emoji !== undefined) patch.emoji = parsed.data.emoji;
+    if (!Object.keys(patch).length) {
+      return NextResponse.json({ error: "nothing to edit" }, { status: 400 });
+    }
+    const { data, error } = await db
+      .from("dibs_tasks")
+      .update(patch)
+      .eq("id", taskId)
+      .select(TASK_COLS)
+      .single();
+    if (error || !data) {
+      return NextResponse.json({ error: "edit failed" }, { status: 500 });
     }
     await broadcast(listId, { kind: "task.upserted", op_id: parsed.data.op_id, task: data });
     return NextResponse.json({ task: data });
