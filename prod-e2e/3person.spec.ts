@@ -43,8 +43,10 @@ test("3-person production E2E: create, share, claim, realtime, recap", async ({ 
     await alice.getByRole("radio", { name: "🎂" }).click();
     await alice.getByLabel("Description").fill("Karaoke + cake, 8pm");
     await alice.getByLabel("Invite link").fill("partiful.com/e/devs25"); // bare domain (the 400 repro)
-    await alice.getByLabel("Add tasks").fill("Order the cake, Make the playlist, Bring decorations, Pick the bar");
-    await alice.getByLabel("Add tasks").press("Enter");
+    for (const t of ["Order the cake", "Make the playlist", "Bring decorations", "Pick the bar"]) {
+      await alice.getByLabel("Add tasks").fill(t);
+      await alice.getByLabel("Add tasks").press("Enter");
+    }
     await alice.getByRole("button", { name: /Create & share/ }).click();
     await expect(alice).toHaveURL(/\/l\/[^/]+\/share$/, { timeout: 20_000 });
     code = new URL(alice.url()).pathname.split("/")[2];

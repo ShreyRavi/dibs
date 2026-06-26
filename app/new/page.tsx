@@ -7,7 +7,7 @@ import { DibsLogo } from "@/components/DibsLogo";
 import { DateField } from "@/components/DateField";
 import { EmojiPicker } from "@/components/EmojiPicker";
 import { DEFAULT_EMOJI } from "@/lib/emojis";
-import { splitLeadingEmoji, splitTasks } from "@/lib/parseTask";
+import { splitLeadingEmoji } from "@/lib/parseTask";
 
 interface DraftTask {
   id: string;
@@ -40,10 +40,9 @@ export default function NewGroup() {
 
   // Comma-separated: "cake, 🎵 playlist, bar" → three tasks at once.
   function addDraft() {
-    const phrases = splitTasks(draft);
-    if (!phrases.length) return;
-    const next = phrases.map((p) => ({ id: uid(), ...splitLeadingEmoji(p) }));
-    setTasks((ts) => [...ts, ...next]);
+    const title = draft.trim();
+    if (!title) return;
+    setTasks((ts) => [...ts, { id: uid(), ...splitLeadingEmoji(title) }]);
     setDraft("");
   }
 
@@ -159,7 +158,7 @@ export default function NewGroup() {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addDraft()}
-          placeholder="Add tasks — separate with commas for several…"
+          placeholder="Add a task, hit enter…"
           aria-label="Add tasks"
           className="w-full bg-transparent font-body text-[16px] text-text caret-[var(--lime)] outline-none placeholder:text-text-40"
         />

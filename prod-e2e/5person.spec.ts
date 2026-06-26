@@ -16,7 +16,14 @@ const GUESTS = [
   { name: "Erin Walsh", phone: "555 500 0005", task: "Run the photos" },
 ];
 // 6 tasks: 5 get claimed, 1 (Order the snacks) left as a dropped ball.
-const TASKS = "Order the cake, Make the playlist, Bring decorations, Pick the bar, Run the photos, Order the snacks";
+const TASKS = [
+  "Order the cake",
+  "Make the playlist",
+  "Bring decorations",
+  "Pick the bar",
+  "Run the photos",
+  "Order the snacks",
+];
 
 async function joinAndClaim(page: Page, task: RegExp, who: { name: string; phone: string }) {
   await page.getByRole("button", { name: new RegExp(`Call dibs on ${task.source}`) }).click();
@@ -46,14 +53,16 @@ test("5-person production E2E: create, share, 5 claims, realtime, recap", async 
   const aliceErrors: string[] = [];
   alice.on("console", (m) => m.type() === "error" && aliceErrors.push(m.text()));
 
-  await test.step("Alice creates the event (emoji, description, invite, 6 comma tasks)", async () => {
+  await test.step("Alice creates the event (emoji, description, invite, 6 tasks)", async () => {
     await alice.goto(`${PROD}/new`);
     await alice.getByLabel("Event name").fill("Dev's 25th");
     await alice.getByRole("radio", { name: "🎂" }).click();
     await alice.getByLabel("Description").fill("Karaoke + cake, 8pm");
     await alice.getByLabel("Invite link").fill("partiful.com/e/devs25");
-    await alice.getByLabel("Add tasks").fill(TASKS);
-    await alice.getByLabel("Add tasks").press("Enter");
+    for (const t of TASKS) {
+      await alice.getByLabel("Add tasks").fill(t);
+      await alice.getByLabel("Add tasks").press("Enter");
+    }
     await alice.getByRole("button", { name: /Create & share/ }).click();
     await expect(alice).toHaveURL(/\/l\/[^/]+\/share$/, { timeout: 20_000 });
     code = new URL(alice.url()).pathname.split("/")[2];
