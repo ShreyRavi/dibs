@@ -34,6 +34,11 @@ export default function ListClient({ initial }: { initial: State }) {
   const [connected, setConnected] = useState(true);
   const [promptOpen, setPromptOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
+  // Date formatting + "is it past?" are timezone/clock dependent, so they'd
+  // differ between the server render and the browser → hydration mismatch
+  // (React #418). Gate both on mount so they only render client-side.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const myOps = useRef<Set<string>>(new Set());
   const joinInFlight = useRef<Promise<string | null> | null>(null);
   const promptResolver = useRef<
@@ -326,8 +331,11 @@ export default function ListClient({ initial }: { initial: State }) {
   }, [state.id, fireToast]);
 
   // Past or explicitly wrapped → surface the recap up top (stays editable).
-  const isPast = state.event_at ? new Date(state.event_at).getTime() < Date.now() : false;
+  // isPast uses the clock, so only evaluate it after mount (SSR-safe).
+  const isPast =
+    mounted && state.event_at ? new Date(state.event_at).getTime() < Date.now() : false;
   const showRecap = state.completed || isPast;
+  const eventLabel = mounted ? formatEventAt(state.event_at) : "";
 
   return (
     <main className="screen flex flex-col px-5 pt-14 pb-[30px]">
@@ -370,10 +378,8 @@ export default function ListClient({ initial }: { initial: State }) {
             <span aria-hidden className="mr-1.5">{state.emoji}</span>
             {state.title}
           </h1>
-          {formatEventAt(state.event_at) && (
-            <p className="mt-1 font-body text-[13px] text-text-50">
-              {formatEventAt(state.event_at)}
-            </p>
+          {eventLabel && (
+            <p className="mt-1 font-body text-[13px] text-text-50">{eventLabel}</p>
           )}
           {state.description && (
             <p className="mt-2 font-body text-[14px] text-text-60">{state.description}</p>

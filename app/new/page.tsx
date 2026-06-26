@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Washes } from "@/components/Washes";
 import { DibsLogo } from "@/components/DibsLogo";
@@ -31,7 +31,10 @@ export default function NewGroup() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [emoji, setEmoji] = useState<string>(DEFAULT_EMOJI);
-  const [eventAt, setEventAt] = useState(defaultEventAt());
+  // Empty on the server (the default depends on the clock/TZ → would mismatch
+  // hydration); fill it in once mounted on the client.
+  const [eventAt, setEventAt] = useState("");
+  useEffect(() => setEventAt((v) => v || defaultEventAt()), []);
   const [description, setDescription] = useState("");
   const [inviteUrl, setInviteUrl] = useState("");
   const [tasks, setTasks] = useState<DraftTask[]>([]);
