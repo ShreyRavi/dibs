@@ -61,12 +61,13 @@ export function NamePrompt({
         />
         <input
           aria-label="Your number"
-          inputMode="tel"
+          inputMode="numeric"
           autoComplete="tel"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          // Keep it numeric only — strip anything that isn't a digit as they type.
+          onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
           onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="Your number"
+          placeholder="Your number — e.g. 5551234567"
           className="mt-2.5 w-full rounded-[12px] border border-hairline bg-bg px-3.5 py-3 font-body text-[16px] text-text caret-[var(--lime)] outline-none placeholder:text-text-40"
         />
         <p className="mt-2 font-body text-[12px] text-text-40">

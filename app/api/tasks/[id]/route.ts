@@ -65,7 +65,7 @@ export async function POST(
   if (action === "unclaim") {
     const { data, error } = await db
       .from("dibs_tasks")
-      .update({ owner_member_id: null })
+      .update({ owner_member_id: null, done: false }) // releasing clears progress
       .eq("id", taskId)
       .eq("owner_member_id", me.id) // only the owner can release
       .select(TASK_COLS)

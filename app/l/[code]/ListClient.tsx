@@ -215,9 +215,12 @@ export default function ListClient({ initial }: { initial: State }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "toggle", done: nextDone, op_id }),
       });
-      if (res.ok) applyTask((await res.json()).task as Task);
+      if (res.ok) {
+        applyTask((await res.json()).task as Task);
+        fireToast(nextDone ? "Checked off ✅" : "Back on the list ↩️");
+      }
     },
-    [applyTask],
+    [applyTask, fireToast],
   );
 
   // Tap a task's text → edit/delete. Gated to recognized members (joins first
@@ -247,14 +250,43 @@ export default function ListClient({ initial }: { initial: State }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "edit", title: v.title, emoji: v.emoji, op_id }),
       });
-      if (res.ok) applyTask((await res.json()).task as Task);
-      else {
+      if (res.ok) {
+        applyTask((await res.json()).task as Task);
+        fireToast("Task updated ✏️");
+      } else {
         await resync();
         fireToast("couldn't save that 😕");
       }
     },
     [editing, applyTask, resync, fireToast],
   );
+
+  // Undib: release a task you own back to the pool (owner-only, server-enforced).
+  const undibTask = useCallback(async () => {
+    if (!editing) return;
+    const task = editing;
+    setEditing(null);
+    const op_id = newOpId();
+    myOps.current.add(op_id);
+    setState((s) => ({
+      ...s,
+      tasks: s.tasks.map((t) =>
+        t.id === task.id ? { ...t, owner_member_id: null, done: false } : t,
+      ), // optimistic
+    }));
+    const res = await fetch(`/api/tasks/${task.id}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "unclaim", op_id }),
+    });
+    if (res.ok) {
+      applyTask((await res.json()).task as Task);
+      fireToast("Un-dibbed — back up for grabs 🔓");
+    } else {
+      await resync();
+      fireToast("couldn't un-dib that 😕");
+    }
+  }, [editing, applyTask, resync, fireToast]);
 
   const deleteTask = useCallback(async () => {
     if (!editing) return;
@@ -288,8 +320,9 @@ export default function ListClient({ initial }: { initial: State }) {
     if (res.ok) {
       const { tasks } = await res.json();
       (tasks as Task[]).forEach(applyTask);
+      fireToast((tasks as Task[]).length > 1 ? "Tasks added ✨" : "Task added ✨");
     }
-  }, [draft, state.id, applyTask]);
+  }, [draft, state.id, applyTask, fireToast]);
 
   // Wrap up: mark the event completed, then show the recap.
   const wrapUp = useCallback(async () => {
@@ -536,7 +569,9 @@ export default function ListClient({ initial }: { initial: State }) {
       {editing && (
         <TaskEditModal
           task={editing}
+          canUndib={!!editing.owner_member_id && editing.owner_member_id === state.you}
           onSave={editTask}
+          onUndib={undibTask}
           onDelete={deleteTask}
           onClose={() => setEditing(null)}
         />

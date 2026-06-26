@@ -10,12 +10,16 @@ import type { Task } from "@/lib/types";
 // Only reachable once the device is a recognized member (gated by the caller).
 export function TaskEditModal({
   task,
+  canUndib,
   onSave,
+  onUndib,
   onDelete,
   onClose,
 }: {
   task: Task;
+  canUndib?: boolean;
   onSave: (v: { emoji: string; title: string }) => void;
+  onUndib?: () => void;
   onDelete: () => void;
   onClose: () => void;
 }) {
@@ -73,6 +77,15 @@ export function TaskEditModal({
         >
           Update task
         </button>
+
+        {canUndib && onUndib && (
+          <button
+            onClick={onUndib}
+            className="mt-2.5 w-full rounded-[14px] border border-hairline-strong px-4 py-3 font-display text-[15px] font-semibold text-text-60"
+          >
+            Un-dib — give it back 🔓
+          </button>
+        )}
 
         {confirmDel ? (
           <div className="mt-2.5 flex gap-2">
