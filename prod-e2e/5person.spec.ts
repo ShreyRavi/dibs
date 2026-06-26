@@ -106,10 +106,16 @@ test("5-person production E2E: create, share, 5 claims, realtime, recap", async 
   });
 
   await test.step("Everyone checks off their task (5 done, 1 dropped)", async () => {
-    await alice.getByRole("button", { name: /Mark .*Order the cake.* done/ }).click();
-    for (let i = 0; i < GUESTS.length; i++) {
-      await guestPages[i].getByRole("button", { name: new RegExp(`Mark .*${GUESTS[i].task}.* done`) }).click();
-    }
+    // Click, then verify the toggle actually registered (the label flips to "not
+    // done") before moving on — guards against a lost click under realtime churn.
+    const check = async (page: Page, task: string) => {
+      await page.getByRole("button", { name: new RegExp(`Mark .*${task}.* done`) }).click();
+      await expect(
+        page.getByRole("button", { name: new RegExp(`Mark .*${task}.* not done`) }),
+      ).toBeVisible({ timeout: 10_000 });
+    };
+    await check(alice, "Order the cake");
+    for (let i = 0; i < GUESTS.length; i++) await check(guestPages[i], GUESTS[i].task);
   });
 
   await test.step("Alice wraps up — recap shows all 5 + who did what", async () => {
