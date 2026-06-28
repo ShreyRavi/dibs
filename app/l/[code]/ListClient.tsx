@@ -107,18 +107,34 @@ export default function ListClient({ initial }: { initial: State }) {
     if (res.ok) setState(await res.json());
   }, [state.id]);
 
-  // Self-heal any dropped Broadcast message: resync on tab refocus and on a
-  // gentle interval. Broadcast is best-effort, so this guarantees eventual
-  // consistency for a multi-person live list without hammering the server.
+  // Self-heal any dropped Broadcast message. Broadcast is best-effort, so we
+  // catch up by resyncing — but ONLY while the tab is visible. A backgrounded
+  // tab (very common on mobile) stops polling entirely: no radio wakeups, no DB
+  // hits; it resyncs once on refocus instead. Big battery + server-load win.
   useEffect(() => {
+    let iv: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      if (iv == null) iv = setInterval(resync, 20_000);
+    };
+    const stop = () => {
+      if (iv != null) {
+        clearInterval(iv);
+        iv = null;
+      }
+    };
     const onVisible = () => {
-      if (document.visibilityState === "visible") resync();
+      if (document.visibilityState === "visible") {
+        resync(); // catch up on whatever we missed while hidden
+        start();
+      } else {
+        stop();
+      }
     };
     document.addEventListener("visibilitychange", onVisible);
-    const iv = setInterval(resync, 20_000);
+    if (document.visibilityState === "visible") start();
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
-      clearInterval(iv);
+      stop();
     };
   }, [resync]);
 

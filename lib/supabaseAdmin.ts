@@ -20,14 +20,29 @@ export function supabaseAdmin(): SupabaseClient {
 }
 
 // Publish a Broadcast event to channel `list:{id}` so subscribed clients update.
-// Uses the admin client's realtime connection; fire-and-forget.
+// Uses Realtime's HTTP endpoint — one stateless request, no WebSocket handshake
+// per action (the old channel.send opened+closed a socket on every mutation,
+// adding latency on serverless). Fire-and-forget; clients self-heal via resync.
 export async function broadcast(
   listId: string,
   event: Record<string, unknown>,
 ): Promise<void> {
-  const channel = supabaseAdmin().channel(`list:${listId}`, {
-    config: { broadcast: { ack: false } },
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return;
+  await fetch(`${url}/realtime/v1/api/broadcast`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      messages: [
+        { topic: `list:${listId}`, event: "change", payload: event, private: false },
+      ],
+    }),
+  }).catch(() => {
+    /* best-effort; subscribers reconcile on their next resync */
   });
-  await channel.send({ type: "broadcast", event: "change", payload: event });
-  await supabaseAdmin().removeChannel(channel);
 }

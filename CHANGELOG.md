@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.0.0 (2026-06-28)
+
+### Performance / efficiency (no functional change)
+- **Battery + DB load**: the live-list resync interval now pauses while the tab
+  is backgrounded (resyncs once on refocus) — no radio wakeups or DB polling
+  from hidden tabs, which matters a lot on mobile.
+- **Realtime broadcast** now uses Realtime's HTTP endpoint instead of opening +
+  closing a WebSocket channel on every task action — one stateless request, less
+  serverless latency. Delivery verified unchanged.
+- **State snapshot**: the member-identity lookup runs in parallel with the
+  members/tasks queries (was a wasted extra roundtrip on every paint/resync).
+- Dropped the unused **framer-motion** dependency (smaller install/bundle).
+
+### Mobile-readiness
+- Added a **PWA manifest** + apple-touch / maskable icon (installable; gives the
+  future mobile wrapper a real app identity).
+
+
 ## 0.6.0.0 (2026-06-25)
 
 ### Added

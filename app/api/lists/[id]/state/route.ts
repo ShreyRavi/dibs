@@ -22,7 +22,9 @@ export async function GET(
     .single();
   if (!list) return NextResponse.json({ error: "list not found" }, { status: 404 });
 
-  const [{ data: members }, { data: tasks }] = await Promise.all([
+  // All three are independent — run them together (requireMember was a wasted
+  // extra roundtrip when awaited serially after the others).
+  const [{ data: members }, { data: tasks }, you] = await Promise.all([
     db.from("dibs_members").select("id, name, color").eq("list_id", listId),
     db
       .from("dibs_tasks")
@@ -30,9 +32,8 @@ export async function GET(
       .eq("list_id", listId)
       .is("deleted_at", null)
       .order("position", { ascending: true }),
+    requireMember(listId),
   ]);
-
-  const you = await requireMember(listId);
 
   const state: ListState & { you: string | null } = {
     id: list.id,
