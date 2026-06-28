@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.2.0 (2026-06-28)
+
+### SEO / social
+- Added robots.txt (index only the homepage; disallow private /l/, /r/, /new,
+  /api) and a sitemap (homepage).
+- metadataBase + canonical + Open Graph / Twitter defaults; a branded homepage
+  OG image (app/opengraph-image) so shared links unfurl with a card.
+- Private list pages now emit noindex,nofollow — kept out of search while their
+  OG tags still let chat apps unfurl the link.
+
+
 ## 0.7.1.0 (2026-06-28)
 
 ### Performance (no functional/visual change)

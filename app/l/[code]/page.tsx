@@ -34,6 +34,9 @@ export async function generateMetadata({
   return {
     title: `${list.title} — Dibs`,
     description: desc,
+    // Private, per-group page: keep it out of search (OG tags still let chat
+    // apps unfurl the link — unfurlers don't honor robots/noindex).
+    robots: { index: false, follow: false },
     openGraph: { title: list.title, description: desc, type: "website" },
     twitter: { card: "summary_large_image", title: list.title, description: desc },
   };
