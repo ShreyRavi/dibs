@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.1.0 (2026-06-28)
+
+### Performance (no functional/visual change)
+- List page server-render: deduped the list-by-code lookup across
+  generateMetadata + the page body via React cache() (one query, was two), and
+  folded the member-identity lookup into the parallel query batch.
+- Trimmed 3 unused web-font weight files (Gabarito 500/900, Hanken 800) — only
+  the weights the UI actually uses are downloaded.
+
+
 ## 0.7.0.0 (2026-06-28)
 
 ### Performance / efficiency (no functional change)

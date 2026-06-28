@@ -2,18 +2,19 @@ import type { Metadata, Viewport } from "next";
 import { Gabarito, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 
-// Display/headings/numbers (handoff: Gabarito 400-900).
+// Display/headings/numbers. Only weights actually used (semibold/bold/extrabold)
+// + 400 base — drops the unused 500/900 font files.
 const gabarito = Gabarito({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "600", "700", "800"],
   display: "swap",
   variable: "--font-gabarito",
 });
 
-// Body/UI text (handoff: Hanken Grotesk 400-800).
+// Body/UI text. Weights in use (400/500/600/700) — drops the unused 800 file.
 const hanken = Hanken_Grotesk({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
   variable: "--font-hanken",
 });
